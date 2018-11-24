@@ -16,17 +16,10 @@ program
   .option('-o, --output-directory [shots-dir]', 'Output directory for tests, directory in config file')
   .parse(process.argv);
 
-const config = loadConfig.load(program.defaultsFile, program.configFile);
+let domains = program.args;
+const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
 const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
 config.directory = shotsDir;
-
-let domains = program.args;
-if (domains.length) {
-  config.domains = {
-    domain1: domains[0],
-    domain2: domains[1],
-  }
-}
 
 try {
   compareShots(config, program)

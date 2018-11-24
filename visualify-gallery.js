@@ -4,7 +4,6 @@
 const program = require('commander');
 
 const fs   = require('fs');
-const sharp = require('sharp');
 const chalk = require('chalk');
 const Mustache = require('mustache');
 const loadConfig = require('./lib/loadConfig.js');
@@ -16,7 +15,8 @@ program
   .option('-o, --output-directory [shots-dir]', 'Output directory for tests, directory in config file')
   .parse(process.argv);
 
-const config = loadConfig.load(program.defaultsFile, program.configFile);
+let domains = program.args;
+const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
 const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
 config.directory = shotsDir;
 

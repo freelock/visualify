@@ -28,17 +28,10 @@ program
   .parse(process.argv);
 
 let domains = program.args;
-const config = loadConfig.load(program.defaultsFile, program.configFile);
+const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
 
 const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
 config.directory = shotsDir;
-
-if (domains.length) {
-  config.domains = {
-    domain1: domains[0],
-    domain2: domains[1],
-  }
-}
 
 // Set up directories
 if (!fs.existsSync(shotsDir)) fs.mkdirSync(shotsDir);

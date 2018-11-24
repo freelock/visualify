@@ -30,10 +30,10 @@ const program = require('commander');
 
 program
   .version('0.0.1')
-  .command("capture [domain1] [domain2]", "Capture screenshots of sites")
-  .command('compare', 'Compare captured shots')
-  .command('thumbnail', 'Generate thumbnails')
-  .command('gallery', 'Call wraith to generate a gallery')
+  .command("capture [domain1name] [domain1url] [domain2name] [domain2url]", "Capture screenshots of sites")
+  .command('compare [domain1name] [domain1url] [domain2name] [domain2url]', 'Compare captured shots')
+  .command('thumbnail [domain1name] [domain1url] [domain2name] [domain2url]', 'Generate thumbnails')
+  .command('gallery [domain1name] [domain1url] [domain2name] [domain2url]', 'Call wraith to generate a gallery')
   .command('all','Run all steps');
   
 program.parse(process.argv);

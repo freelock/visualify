@@ -65,15 +65,16 @@ async function imageDiff(items, config) {
         return;
       }
       const width = Math.max(img1.width, img2.width);
+      let img1changed = false, img2changed = false;
       if (img1.width != img2.width) {
         if (img1.width > img2.width) {
           console.log(chalk.yellow(`img2 width difference ${img2.width} should be ${width}. Adjusting...`));
           img2.width = width;
-          img2.pack().pipe(fs.createWriteStream(items[domainKeys[1]]));
+          img2changed = true;
         } else {
           console.log(chalk.yellow(`img1 width difference ${img1.width} should be ${width}. Adjusting...`));
           img1.width = width;
-          img1.pack().pipe(fs.createWriteStream(items[domainKeys[0]]));
+          img1changed = true;
 
         }
       }
@@ -83,13 +84,19 @@ async function imageDiff(items, config) {
         if (img1.height > img2.height) {
           console.log(chalk.yellow(`img2 height difference ${img2.height} should be ${height}. Adjusting...`));
           img2.height = height;
-          img2.pack().pipe(fs.createWriteStream(items[domainKeys[1]]));
+          img2changed = true;
         } else {
           console.log(chalk.yellow(`img1 height difference ${img1.height} should be ${height}. Adjusting...`));
           img1.height = height;
-          img1.pack().pipe(fs.createWriteStream(items[domainKeys[0]]));
+          img1changed = true;
 
         }
+      }
+      if (img1changed){
+        img1.pack().pipe(fs.createWriteStream(items[domainKeys[0]]));
+      }
+      if (img2changed) {
+        img2.pack().pipe(fs.createWriteStream(items[domainKeys[1]]));
       }
       const diff = new PNG({width, height});
       const numDiffPixels = pixelmatch(img1.data, img2.data, diff.data, width, height, {

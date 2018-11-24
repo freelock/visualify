@@ -34,5 +34,6 @@ program
   .command('compare', 'Compare captured shots')
   .command('thumbnail', 'Generate thumbnails')
   .command('gallery', 'Call wraith to generate a gallery')
+  .command('all','Run all steps');
   
 program.parse(process.argv);

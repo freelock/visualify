@@ -3,12 +3,18 @@
 const program = require('commander');
 
 const fs   = require('fs');
+const isDocker = require('is-docker');
 const chalk = require('chalk');
 const puppeteer = require('puppeteer');
 const loadConfig = require('./lib/loadConfig.js');
 
-// in a docker container, need no sandbox
 const browserOptions = {};
+
+// in a docker container, need no sandbox
+if (isDocker()) {
+  browserOptions.args = ['--no-sandbox', '--disable-setuid-sandbox'];
+}
+
 // Set a 5 minute timeout, instead of defualt 30 seconds
 const requestOpts = {
   timeout: 300000,

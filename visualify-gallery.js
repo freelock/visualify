@@ -109,7 +109,7 @@ async function loadPaths(config) {
 }
 
 async function saveGallery(config, variables) {
-  const template = fs.readFileSync(`${__dirname}/${config.gallery.template}.mustache`, 'utf8');
+  const template = fs.readFileSync(`${__dirname}/configs/${config.gallery.template}.mustache`, 'utf8');
   const rendered = Mustache.render(template, variables);
   fs.writeFileSync(`${config.directory}/gallery.html`, rendered);
 }

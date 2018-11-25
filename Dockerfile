@@ -39,7 +39,8 @@ RUN composer global require drush/drush:8.x && ln -s ~/.composer/vendor/bin/drus
 
 RUN mkdir -p /opt/visualify
 WORKDIR /opt/visualify
-ADD index.js visualify* *.mustache package* *.yaml /opt/visualify/
+ADD index.js visualify* package* /opt/visualify/
 ADD lib/* /opt/visualify/lib/
+ADD configs/* /opt/visualify/configs/
 RUN npm install
 RUN npm link

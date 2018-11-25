@@ -25,10 +25,21 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
       --no-install-recommends
 
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
-RUN apt-get install -y nodejs
+
+RUN export DEBIAN_FRONTEND=noninteractive && \
+  apt-get install -y nodejs \
+  php-cli jq unzip openssh-client
+# Install composer
+RUN bash -c "wget http://getcomposer.org/composer.phar && mv composer.phar /usr/local/bin/composer \
+  && chmod 755 /usr/local/bin/composer"
+
+# Install drush
+RUN composer global require drush/drush:8.x && ln -s ~/.composer/vendor/bin/drush /usr/local/bin/drush
+
 
 RUN mkdir -p /opt/visualify
 WORKDIR /opt/visualify
-ADD index.js visualify* *.mustache package* *.yaml lib /opt/visualify/
+ADD index.js visualify* *.mustache package* *.yaml /opt/visualify/
+ADD lib/* /opt/visualify/lib/
 RUN npm install
 RUN npm link

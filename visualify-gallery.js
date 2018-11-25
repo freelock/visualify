@@ -115,5 +115,5 @@ async function saveGallery(config, variables) {
 }
 
 function addLog(msg) {
-  console.warn(msg);
+  console.log(msg);
 }

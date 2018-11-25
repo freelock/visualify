@@ -5,6 +5,7 @@ const program = require('commander');
 
 const fs   = require('fs');
 const chalk = require('chalk');
+const sharp = require('sharp');
 const PNG = require('pngjs').PNG;
 const pixelmatch = require('pixelmatch');
 const loadConfig = require('./lib/loadConfig.js');
@@ -54,60 +55,63 @@ async function compareShots(config, program) {
 }
 
 async function imageDiff(items, config) {
+  let img1changed = false, img2changed = false;
   const domainKeys = Object.keys(config.domains);
-  return new Promise((resolve, reject) => {
-    const img1 = fs.createReadStream(items[domainKeys[0]]).pipe(new PNG()).on('parsed', doneReading);
-    const img2 = fs.createReadStream(items[domainKeys[1]]).pipe(new PNG()).on('parsed', doneReading);
+  const sharp1 = sharp(items[domainKeys[0]]);
+  const sharp2 = sharp(items[domainKeys[1]]);
 
-    let filesRead = 0;
-    function doneReading() {
-      if (++filesRead < 2) {
-        return;
-      }
-      const width = Math.max(img1.width, img2.width);
-      let img1changed = false, img2changed = false;
-      if (img1.width != img2.width) {
-        if (img1.width > img2.width) {
-          console.log(chalk.yellow(`img2 width difference ${img2.width} should be ${width}. Adjusting...`));
-          img2.width = width;
-          img2changed = true;
-        } else {
-          console.log(chalk.yellow(`img1 width difference ${img1.width} should be ${width}. Adjusting...`));
-          img1.width = width;
-          img1changed = true;
+  const promise1 = sharp1.toBuffer();
+  const promise2 = sharp2.toBuffer();
+  let [ img1, img2 ] = await Promise.all([promise1, promise2]);
+  img1 = PNG.sync.read(img1);
+  img2 = PNG.sync.read(img2);
 
-        }
-      }
-      const height = Math.max(img1.height, img2.height);
-      if (img1.height != img2.height){
-        // Adjust the smaller to match
-        if (img1.height > img2.height) {
-          console.log(chalk.yellow(`img2 height difference ${img2.height} should be ${height}. Adjusting...`));
-          img2.height = height;
-          img2changed = true;
-        } else {
-          console.log(chalk.yellow(`img1 height difference ${img1.height} should be ${height}. Adjusting...`));
-          img1.height = height;
-          img1changed = true;
-
-        }
-      }
-      if (img1changed){
-        img1.pack().pipe(fs.createWriteStream(items[domainKeys[0]]));
-      }
-      if (img2changed) {
-        img2.pack().pipe(fs.createWriteStream(items[domainKeys[1]]));
-      }
-      const diff = new PNG({width, height});
-      const numDiffPixels = pixelmatch(img1.data, img2.data, diff.data, width, height, {
-        threshold: 0.06,
-      });
-      diff.pack().pipe(fs.createWriteStream(items.diff));
-      const percent = numDiffPixels * 100 / (width * height);
-      fs.writeFileSync(items.log, percent.toFixed(2));
-
-      console.log(chalk.green(`Diff for ${items.diff}: ${percent}%`));
-      resolve();
+  const width = Math.max(img1.width, img2.width);
+  if (img1.width != img2.width) {
+    if (img1.width > img2.width) {
+      console.log(chalk.yellow(`img2 narrower. Changing ${img2.width} to ${width}.`));
+      img2 = await sharp2
+        .resize({width, position:"left"})
+        .toBuffer();
+      img2 = PNG.sync.read(img2);
+      img2changed = true;
+    } else {
+      console.log(chalk.yellow(`img1 narrower. Changing ${img1.width} to ${width}.`));
+      img1 = await sharp1
+        .resize({width, position:"left"})
+        .toBuffer();
+      img1 = PNG.sync.read(img1);
+      img1changed = true;
     }
+  }
+  
+  const height = Math.max(img1.height, img2.height);
+  if (img1.height != img2.height){
+    // Adjust the smaller to match
+    if (img1.height > img2.height) {
+      console.log(chalk.yellow(`img2 shorter. Changing ${img2.height} to ${height}.`));
+      img2.height = height;
+      img2changed = true;
+    } else {
+      console.log(chalk.yellow(`img1 shorter. Changing ${img2.height} to ${height}.`));
+      img1.height = height;
+      img1changed = true;
+    }
+  }
+  if (img1changed){
+    fs.writeFileSync(items[domainKeys[0]], PNG.sync.write(img1));
+  }
+  if (img2changed) {
+    fs.writeFileSync(items[domainKeys[1]], PNG.sync.write(img2));
+  }
+  const diff = new PNG({width, height});
+  const numDiffPixels = pixelmatch(img1.data, img2.data, diff.data, width, height, {
+    threshold: 0.06,
   });
+  diff.pack().pipe(fs.createWriteStream(items.diff));
+  const percent = numDiffPixels * 100 / (width * height);
+  fs.writeFileSync(items.log, percent.toFixed(2));
+
+  console.log(chalk.green(`Diff for ${items.diff}: ${percent}%`));
+
 }

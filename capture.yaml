@@ -22,7 +22,7 @@ before_capture: 'javascript/wait--chrome.js'
 fuzz: 20%
 
 # (optional) The maximum acceptable level of difference (in %) between two images before Wraith reports a failure. Default: 0
-threshold: 5
+threshold: 6
 gallery:
   template: 'slideshow_template' # Examples: 'basic_template' (default), 'slideshow_template'
   thumb_width:  200

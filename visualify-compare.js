@@ -92,7 +92,8 @@ async function imageDiff(items, config) {
       console.log(chalk.yellow(`img2 shorter. Changing ${img2.height} to ${height}.`));
       img2.height = height;
       img2changed = true;
-    } else {
+    } else if (img1.height < img2.height) {
+      // Not sure why there's any doubt, but we are seeing lots of images resized to the same height
       console.log(chalk.yellow(`img1 shorter. Changing ${img2.height} to ${height}.`));
       img1.height = height;
       img1changed = true;

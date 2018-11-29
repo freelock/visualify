@@ -15,9 +15,9 @@ if (isDocker()) {
   browserOptions.args = ['--no-sandbox', '--disable-setuid-sandbox'];
 }
 
-// Set a 5 minute timeout, instead of defualt 30 seconds
+// Set a 1 minute timeout, instead of defualt 30 seconds
 const requestOpts = {
-  timeout: 300000,
+  timeout: 60000,
 };
 
 program
@@ -42,7 +42,7 @@ Object.keys(config.paths).map((name) => {
 });
 
 try {
-  capture(config, program)
+  retry(capture, (config, program))
     .then(() => console.log(chalk.green('Screenshots done!')));
 } catch (e) {
   console.error(e);
@@ -50,7 +50,7 @@ try {
 }
 
 async function capture(config, program) {
-  let browser, path;
+  let browser, path, attempt = 0;
   try {
     if (program.debug) {
       browserOptions.headless = false;
@@ -111,4 +111,29 @@ async function snapPath(path, config, browser) {
     }
     await page.close();
   };
+}
+
+/**
+ * Retries the given function until it succeeds given a number of retries and an interval between them. They are set
+ * by default to retry 5 times with 1sec in between. There's also a flag to make the cooldown time exponential
+ * @author Daniel Iñigo <danielinigobanos@gmail.com>
+ * @param {Function} fn - Returns a promise
+ * @param {Array} args - Arguments to pass to fn
+ * @param {Number} retriesLeft - Number of retries. If -1 will keep retrying
+ * @param {Number} interval - Millis between retries. If exponential set to true will be doubled each retry
+ * @param {Boolean} exponential - Flag for exponential back-off mode
+ * @return {Promise<*>}
+ * 
+ * original source: https://gitlab.com/snippets/1775781
+ */
+async function retry(fn, args, retriesLeft = 5, interval = 1000, exponential = false) {
+  try {
+    const val = await fn(...args);
+    return val;
+  } catch (error) {
+    if (retriesLeft) {
+      await new Promise(r => setTimeout(r, interval));
+      return retry(fn, retriesLeft - 1, exponential ? interval * 2 : interval, exponential);
+    } else throw new Error('Max retries reached');
+  }
 }

@@ -42,7 +42,7 @@ Object.keys(config.paths).map((name) => {
 });
 
 try {
-  retry(capture, (config, program))
+  capture(config, program)
     .then(() => console.log(chalk.green('Screenshots done!')));
 } catch (e) {
   console.error(e);
@@ -50,7 +50,7 @@ try {
 }
 
 async function capture(config, program) {
-  let browser, path, attempt = 0;
+  let browser, path
   try {
     if (program.debug) {
       browserOptions.headless = false;
@@ -58,7 +58,7 @@ async function capture(config, program) {
     browser = await puppeteer.launch(browserOptions);
     // Create snapshots -- can't use Array.map here because it launches too many browsers
     for (path in config.paths) {
-      await snapPath(path, config, browser);
+      await retry(snapPath, [path, config, browser]);
     }
     return browser.close();
   } catch (e) {
@@ -118,7 +118,7 @@ async function snapPath(path, config, browser) {
  * by default to retry 5 times with 1sec in between. There's also a flag to make the cooldown time exponential
  * @author Daniel Iñigo <danielinigobanos@gmail.com>
  * @param {Function} fn - Returns a promise
- * @param {Array} args - Arguments to pass to fn
+ * @param {Array} params - Arguments to pass to fn
  * @param {Number} retriesLeft - Number of retries. If -1 will keep retrying
  * @param {Number} interval - Millis between retries. If exponential set to true will be doubled each retry
  * @param {Boolean} exponential - Flag for exponential back-off mode
@@ -126,14 +126,16 @@ async function snapPath(path, config, browser) {
  * 
  * original source: https://gitlab.com/snippets/1775781
  */
-async function retry(fn, args, retriesLeft = 5, interval = 1000, exponential = false) {
+async function retry(fn, params, retriesLeft = 5, interval = 1000, exponential = false) {
   try {
-    const val = await fn(...args);
+    const val = await fn(...params);
     return val;
   } catch (error) {
+    console.log('Error:', error);
     if (retriesLeft) {
+      console.log(`Retrying...${retriesLeft} more times`);
       await new Promise(r => setTimeout(r, interval));
-      return retry(fn, retriesLeft - 1, exponential ? interval * 2 : interval, exponential);
+      return retry(fn, params, retriesLeft - 1, exponential ? interval * 2 : interval, exponential);
     } else throw new Error('Max retries reached');
   }
 }

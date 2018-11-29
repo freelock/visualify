@@ -72,6 +72,7 @@ async function imageDiff(items, config) {
       console.log(chalk.yellow(`img2 narrower. Changing ${img2.width} to ${width}.`));
       img2 = await sharp2
         .resize({width, position:"left"})
+        .withoutEnlargement()
         .toBuffer();
       img2 = PNG.sync.read(img2);
       img2changed = true;
@@ -79,6 +80,7 @@ async function imageDiff(items, config) {
       console.log(chalk.yellow(`img1 narrower. Changing ${img1.width} to ${width}.`));
       img1 = await sharp1
         .resize({width, position:"left"})
+        .withoutEnlargement()
         .toBuffer();
       img1 = PNG.sync.read(img1);
       img1changed = true;

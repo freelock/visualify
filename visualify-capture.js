@@ -23,6 +23,7 @@ const requestOpts = {
 program
   .option('-c, --config-file <config-file>', 'Configuration file')
   .option('-d, --defaults-file <defaults-file>', 'Default configuration')
+  .option('-r, --allow-root', 'Pass the --no-sandbox option to Puppeteer to allow root')
   .option('--debug', 'Show browser while doing snaps')
   .option('-o, --output-directory [shots-dir]', 'Output directory for tests, directory in config file')
   .parse(process.argv);
@@ -54,6 +55,9 @@ async function capture(config, program) {
   try {
     if (program.debug) {
       browserOptions.headless = false;
+    }
+    if (program.allowRoot) {
+      browserOptions.args = ['--no-sandbox', '--disable-setuid-sandbox'];
     }
     browser = await puppeteer.launch(browserOptions);
     // Create snapshots -- can't use Array.map here because it launches too many browsers

@@ -42,6 +42,16 @@ Object.keys(config.paths).map((name) => {
   if (!fs.existsSync(`${shotsDir}/thumbnails/${name}`)) fs.mkdirSync(`${shotsDir}/thumbnails/${name}`);
 });
 
+// Read adblock hosts...
+const hostFile = fs.readFileSync(`${__dirname}/hosts.txt`, 'utf8').split('\n');
+const hosts = hostFile.reduce((agg, line) => {
+  const frags = line.split(' ');
+  if (frags.length > 1 && frags[0] === '0.0.0.0') {
+    agg[frags[1].trim()] = true;
+  }
+  return agg;
+}, {});
+
 try {
   capture(config, program)
     .then(() => console.log(chalk.green('Screenshots done!')));
@@ -99,6 +109,25 @@ function viewport(width) {
 async function snapPath(path, config, browser) {
   for (const domain in config.domains) {
     const page = await browser.newPage();
+    if (config.blockads) {
+      await page.setRequestInterception(true);
+      console.log('Blocking ads from ad hosts');
+      // Block ad technique lifted from https://stackoverflow.com/questions/53807574/how-to-block-ads-with-puppeteer-headless-chrome
+      page.on('request', request => {
+        if (config.blockads) {
+          let domain = null;
+          const frags = request.url().split('/');
+          if (frags.length > 2) {
+            domain = frags[2];
+          }
+          if (hosts[domain] === true) {
+            request.abort();
+            return;
+          }
+        }
+        request.continue();
+      });
+    }
     const url = config.domains[domain] + config.paths[path];
     // Cycle through each resolution
     const filenames = config.screen_widths.map(function(width) {

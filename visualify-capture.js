@@ -15,9 +15,9 @@ if (isDocker()) {
   browserOptions.args = ['--no-sandbox', '--disable-setuid-sandbox'];
 }
 
-// Set a 1 minute timeout, instead of defualt 30 seconds
+// Set a 1 minute timeout, instead of defualt 30 seconds - bump to 90 seconds
 const requestOpts = {
-  timeout: 60000,
+  timeout: 90000,
 };
 
 program

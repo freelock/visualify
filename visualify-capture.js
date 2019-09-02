@@ -16,7 +16,7 @@ if (isDocker()) {
 }
 
 // Set a 1 minute timeout, instead of defualt 30 seconds - bump to 90 seconds
-const requestOpts = {
+let requestOpts = {
   timeout: 90000,
 };
 
@@ -51,6 +51,11 @@ const hosts = hostFile.reduce((agg, line) => {
   }
   return agg;
 }, {});
+
+// Support requestOpts
+if (config.requestOpts) {
+  requestOpts = {...requestOpts, ...config.requestOpts};
+}
 
 try {
   capture(config, program)

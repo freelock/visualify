@@ -114,6 +114,9 @@ function viewport(width) {
 async function snapPath(path, config, browser) {
   for (const domain in config.domains) {
     const page = await browser.newPage();
+    if (config.auth) {
+      await page.authenticate({'username': config.auth.username, 'password': config.auth.password});
+    }
     if (config.blockads) {
       await page.setRequestInterception(true);
       console.log('Blocking ads from ad hosts');

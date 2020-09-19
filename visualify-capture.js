@@ -74,6 +74,7 @@ async function capture(config, program) {
     if (program.allowRoot) {
       browserOptions.args = ['--no-sandbox', '--disable-setuid-sandbox'];
     }
+    browserOptions.ignoreHTTPSErrors = true;
     browser = await puppeteer.launch(browserOptions);
     // Create snapshots -- can't use Array.map here because it launches too many browsers
     for (path in config.paths) {

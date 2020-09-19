@@ -24,7 +24,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
      ttf-mscorefonts-installer ttf-bitstream-vera ttf-dejavu \
       --no-install-recommends
 
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
   apt-get install -y nodejs \
@@ -44,3 +44,4 @@ ADD lib/* /opt/visualify/lib/
 ADD configs/* /opt/visualify/configs/
 RUN npm install
 RUN npm link
+ADD hosts.txt /opt/visualify/

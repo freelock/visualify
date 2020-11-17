@@ -72,7 +72,9 @@ async function capture(config, program) {
       browserOptions.headless = false;
     }
     if (program.allowRoot) {
-      browserOptions.args = ['--no-sandbox', '--disable-setuid-sandbox'];
+      browserOptions.args = ['--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage'];
     }
     browserOptions.ignoreHTTPSErrors = true;
     browser = await puppeteer.launch(browserOptions);

@@ -59,7 +59,11 @@ if (config.requestOpts) {
 
 try {
   capture(config, program)
-    .then(() => console.log(chalk.green('Screenshots done!')));
+    .then(() => console.log(chalk.green('Screenshots done!')))
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
 } catch (e) {
   console.error(e);
   process.exit(1);

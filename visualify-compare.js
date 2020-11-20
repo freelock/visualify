@@ -57,64 +57,84 @@ async function compareShots(config, program) {
 async function imageDiff(items, config) {
   let img1changed = false, img2changed = false;
   const domainKeys = Object.keys(config.domains);
-  const sharp1 = sharp(items[domainKeys[0]]);
-  const sharp2 = sharp(items[domainKeys[1]]);
+  let image1 = sharp(items[domainKeys[0]]);
+  let image2 = sharp(items[domainKeys[1]]);
 
-  const promise1 = sharp1.toBuffer();
-  const promise2 = sharp2.toBuffer();
-  let [ img1, img2 ] = await Promise.all([promise1, promise2]);
-  img1 = PNG.sync.read(img1);
-  img2 = PNG.sync.read(img2);
+  //const promise1 = image1.toBuffer();
+  //const promise2 = image2.toBuffer();
+  //let [ img1, img2 ] = await Promise.all([promise1, promise2]);
+  //img1 = PNG.sync.read(img1);
+  //img2 = PNG.sync.read(img2);
 
-  const width = Math.max(img1.width, img2.width);
-  if (img1.width != img2.width) {
-    if (img1.width > img2.width) {
-      console.log(chalk.yellow(`img2 narrower. Changing ${img2.width} to ${width}.`));
-      img2 = await sharp2
-        .resize({width, position:"left"})
-        .withoutEnlargement()
-        .toBuffer();
-      img2 = PNG.sync.read(img2);
+  let meta1 = await image1.metadata();
+  let meta2 = await image2.metadata();
+  const width = Math.max(meta1.width, meta2.width);
+  if (meta1.width != meta2.width) {
+    if (meta1.width > meta2.width) {
+      console.log(chalk.yellow(`img2 narrower. Changing ${meta2.width} to ${width}.`));
+      image2
+        .resize({width: width, position:"left", withoutEnlargement: true})
+        .extend({top: 0, bottom: 0, left: 0, right: (width - meta2.width), background: {r: 255, g:255, b:0, alpha:1}});
+//        .toBuffer();
+//      img2 = PNG.sync.read(img2);
       img2changed = true;
     } else {
-      console.log(chalk.yellow(`img1 narrower. Changing ${img1.width} to ${width}.`));
-      img1 = await sharp1
-        .resize({width, position:"left"})
-        .withoutEnlargement()
-        .toBuffer();
-      img1 = PNG.sync.read(img1);
+      console.log(chalk.yellow(`img1 narrower. Changing ${meta1.width} to ${width}.`));
+      //img1 = await sharp1
+      image1
+        .resize({width: width, position:"left", withoutEnlargement: true})
+        .extend({top: 0, bottom: 0, left: 0, right: (width - meta1.width), background: {r: 255, g:255, b:0, alpha:1}});
+       // .toBuffer();
+     // img1 = PNG.sync.read(img1);
       img1changed = true;
     }
   }
   
-  const height = Math.max(img1.height, img2.height);
-  if (img1.height != img2.height){
+  const height = Math.max(meta1.height, meta2.height);
+  if (meta1.height != meta2.height){
     // Adjust the smaller to match
-    if (img1.height > img2.height) {
-      console.log(chalk.yellow(`img2 shorter. Changing ${img2.height} to ${height}.`));
-      img2.height = height;
+    if (meta1.height > meta2.height) {
+      console.log(chalk.yellow(`img2 shorter. Changing ${meta2.height} to ${height}.`));
+      image2
+        .resize({height: height, position: 'top', withoutEnlargement: true})
+        .extend({top: 0, bottom: (height - meta2.height), left: 0, right: 0, background: {r:255, g:255, b:0, alpha:1}});
+      //img2.height = height;
       img2changed = true;
-    } else if (img1.height < img2.height) {
+    } else if (meta1.height < meta2.height) {
       // Not sure why there's any doubt, but we are seeing lots of images resized to the same height
-      console.log(chalk.yellow(`img1 shorter. Changing ${img2.height} to ${height}.`));
-      img1.height = height;
+      console.log(chalk.yellow(`img1 shorter. Changing ${meta1.height} to ${height}.`));
+      //img1.height = height;
+      image1
+        .resize({height: height, position: 'top', withoutEnlargement: true})
+        .extend({top: 0, bottom: (height - meta1.height), left: 0, right: 0, background: {r:255, g:255, b:0, alpha:1}});
       img1changed = true;
     }
   }
-  if (img1changed){
-    fs.writeFileSync(items[domainKeys[0]], PNG.sync.write(img1));
-  }
-  if (img2changed) {
-    fs.writeFileSync(items[domainKeys[1]], PNG.sync.write(img2));
-  }
   const diff = new PNG({width, height});
-  const numDiffPixels = pixelmatch(img1.data, img2.data, diff.data, width, height, {
-    threshold: 0.06,
-  });
-  diff.pack().pipe(fs.createWriteStream(items.diff));
-  const percent = numDiffPixels * 100 / (width * height);
-  fs.writeFileSync(items.log, percent.toFixed(2));
-
-  console.log(chalk.green(`Diff for ${items.diff}: ${percent}%`));
+  const promise1 = image1.toBuffer();
+  const promise2 = image2.toBuffer();
+  let [ img1, img2 ] = await Promise.all([promise1, promise2]);
+  img1 = PNG.sync.read(img1);
+  img2 = PNG.sync.read(img2);
+              if (img1changed){
+                //image1.toFile(items[domainKeys[0]]);
+                fs.writeFileSync(items[domainKeys[0]], PNG.sync.write(img1));
+              }
+              if (img2changed) {
+                //image2.toFile(items[domainKeys[0]]);
+                fs.writeFileSync(items[domainKeys[1]], PNG.sync.write(img2));
+              }
+  try {
+    const numDiffPixels = pixelmatch(img1.data, img2.data, diff.data, width, height, {
+      threshold: 0.06,
+    });
+    diff.pack().pipe(fs.createWriteStream(items.diff));
+    const percent = numDiffPixels * 100 / (width * height);
+    fs.writeFileSync(items.log, percent.toFixed(2));
+    console.log(chalk.green(`Diff for ${items.diff}: ${percent}%`));
+  }
+  catch (e) {
+    console.log(chalk.red(`Error running pixelmatch. ${e.name} ${e.message}`));
+  }
 
 }

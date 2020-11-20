@@ -69,14 +69,17 @@ async function loadPaths(config) {
     let maxDiff = 0;
     const widths = config.screen_widths.map((width) => {
       let threshold = '';
+      let diff = 'Not detected';
       const logFilePath = `${basePath}/${width}_chrome_data.txt`;
-      const diff = fs.readFileSync(logFilePath,'utf8');
-      if ((diff * 1) > maxDiff) {
-        maxDiff = diff * 1;
-      }
-      if ((diff * 1) > config.threshold) {
-        threshold = 'threshold';
-        addLog(`WARN: ${path} failed at a resolution of ${width} (${diff}% diff)`);
+      if (fs.existsSync(logFilePath)) {
+        diff = fs.readFileSync(logFilePath,'utf8');
+        if ((diff * 1) > maxDiff) {
+          maxDiff = diff * 1;
+        }
+        if ((diff * 1) > config.threshold) {
+          threshold = 'threshold';
+          addLog(`WARN: ${path} failed at a resolution of ${width} (${diff}% diff)`);
+        }
       }
       return {
         width,

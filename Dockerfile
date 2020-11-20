@@ -34,7 +34,7 @@ RUN bash -c "wget http://getcomposer.org/composer.phar && mv composer.phar /usr/
   && chmod 755 /usr/local/bin/composer"
 
 # Install drush
-RUN composer global require drush/drush:8.x && ln -s ~/.composer/vendor/bin/drush /usr/local/bin/drush
+RUN composer global require drush/drush:8.x && ln -s ~/.config/composer/vendor/bin/drush /usr/local/bin/drush
 
 
 RUN mkdir -p /opt/visualify

@@ -20,6 +20,6 @@
     "pixelmatch": "^4.0.2",
     "pngjs": "^3.4.0",
     "puppeteer": "^5.5.0",
-    "sharp": "^0.21.3"
+    "sharp": "^0.30.5"
   }
 }

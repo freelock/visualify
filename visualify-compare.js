@@ -89,7 +89,7 @@ async function imageDiff(items, config) {
       img1changed = true;
     }
   }
-  
+
   const height = Math.max(meta1.height, meta2.height);
   if (meta1.height != meta2.height){
     // Adjust the smaller to match

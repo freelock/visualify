@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-const program = require('commander');
+import { program } from 'commander';
 
-const fs   = require('fs');
-const isDocker = require('is-docker');
-const chalk = require('chalk');
-const puppeteer = require('puppeteer');
-const loadConfig = require('./lib/loadConfig.js');
+import fs from 'fs';
+import chalk from 'chalk';
+import loadConfig from './lib/loadConfig.js';
+import isDocker from 'is-docker';
+import puppeteer from 'puppeteer';
 
 const browserOptions = {};
 
@@ -28,36 +28,36 @@ program
   .option('-o, --output-directory [shots-dir]', 'Output directory for tests, directory in config file')
   .parse(process.argv);
 
-let domains = program.args;
-const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
-
-const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
-config.directory = shotsDir;
-
-// Set up directories
-if (!fs.existsSync(shotsDir)) fs.mkdirSync(shotsDir);
-if (!fs.existsSync(`${shotsDir}/thumbnails`)) fs.mkdirSync(`${shotsDir}/thumbnails`);
-Object.keys(config.paths).map((name) => {
-  if (!fs.existsSync(`${shotsDir}/${name}`)) fs.mkdirSync(`${shotsDir}/${name}`);
-  if (!fs.existsSync(`${shotsDir}/thumbnails/${name}`)) fs.mkdirSync(`${shotsDir}/thumbnails/${name}`);
-});
-
-// Read adblock hosts...
-const hostFile = fs.readFileSync(`${__dirname}/hosts.txt`, 'utf8').split('\n');
-const hosts = hostFile.reduce((agg, line) => {
-  const frags = line.split(' ');
-  if (frags.length > 1 && frags[0] === '0.0.0.0') {
-    agg[frags[1].trim()] = true;
-  }
-  return agg;
-}, {});
-
-// Support requestOpts
-if (config.requestOpts) {
-  requestOpts = {...requestOpts, ...config.requestOpts};
-}
-
+  let domains = program.args;
 try {
+  const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
+
+  const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
+  config.directory = shotsDir;
+
+  // Set up directories
+  if (!fs.existsSync(shotsDir)) fs.mkdirSync(shotsDir);
+  if (!fs.existsSync(`${shotsDir}/thumbnails`)) fs.mkdirSync(`${shotsDir}/thumbnails`);
+  Object.keys(config.paths).map((name) => {
+    if (!fs.existsSync(`${shotsDir}/${name}`)) fs.mkdirSync(`${shotsDir}/${name}`);
+    if (!fs.existsSync(`${shotsDir}/thumbnails/${name}`)) fs.mkdirSync(`${shotsDir}/thumbnails/${name}`);
+  });
+
+  // Read adblock hosts...
+  const hostFile = fs.readFileSync(`${__dirname}/hosts.txt`, 'utf8').split('\n');
+  const hosts = hostFile.reduce((agg, line) => {
+    const frags = line.split(' ');
+    if (frags.length > 1 && frags[0] === '0.0.0.0') {
+      agg[frags[1].trim()] = true;
+    }
+    return agg;
+  }, {});
+
+  // Support requestOpts
+  if (config.requestOpts) {
+    requestOpts = {...requestOpts, ...config.requestOpts};
+  }
+
   capture(config, program)
     .then(() => console.log(chalk.green('Screenshots done!')))
     .catch((e) => {
@@ -65,8 +65,10 @@ try {
       process.exit(1);
     });
 } catch (e) {
-  console.error(e);
-  process.exit(1);
+  if (program.debug) {
+    console.error(e);
+  }
+  program.error(e.message);
 }
 
 async function capture(config, program) {
@@ -97,7 +99,7 @@ async function capture(config, program) {
 /**
  * Convert a string width or widthXheight
  * into an object with width and height properties
- * @param string width 
+ * @param string width
  */
 function viewport(width) {
   if (typeof(width) == 'number') {
@@ -171,7 +173,7 @@ async function snapPath(path, config, browser) {
  * @param {Number} interval - Millis between retries. If exponential set to true will be doubled each retry
  * @param {Boolean} exponential - Flag for exponential back-off mode
  * @return {Promise<*>}
- * 
+ *
  * original source: https://gitlab.com/snippets/1775781
  */
 async function retry(fn, params, retriesLeft = 5, interval = 1000, exponential = false) {

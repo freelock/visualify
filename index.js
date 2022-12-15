@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const program = require('commander');
+import { program } from 'commander';
 
 /**
  * Output directory structure:
@@ -35,5 +35,5 @@ program
   .command('thumbnail [domain1name] [domain1url] [domain2name] [domain2url]', 'Generate thumbnails')
   .command('gallery [domain1name] [domain1url] [domain2name] [domain2url]', 'Call wraith to generate a gallery')
   .command('all','Run all steps');
-  
+
 program.parse(process.argv);

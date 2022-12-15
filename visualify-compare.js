@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 'use strict'
 
-const program = require('commander');
+import { program } from 'commander';
 
-const fs   = require('fs');
-const chalk = require('chalk');
-const sharp = require('sharp');
-const PNG = require('pngjs').PNG;
-const pixelmatch = require('pixelmatch');
-const loadConfig = require('./lib/loadConfig.js');
+import fs from 'fs';
+import chalk from 'chalk';
+import sharp from 'sharp';
+import PNG from 'pngjs';
+import pixelmatch from 'pixelmatch';
+import loadConfig from './lib/loadConfig.js';
 
 program
   .option('-c, --config-file <config-file>', 'Configuration file')
@@ -18,16 +18,18 @@ program
   .parse(process.argv);
 
 let domains = program.args;
-const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
-const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
-config.directory = shotsDir;
-
 try {
+  const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
+  const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
+  config.directory = shotsDir;
+
   compareShots(config, program)
     .then(() => console.log(chalk.blue('Comparisons done!')));
 } catch(e) {
-  console.error(e);
-  process.exit(1);
+  if (program.debug) {
+    console.error(e);
+  }
+  program.error(e.message);
 }
 
 async function compareShots(config, program) {

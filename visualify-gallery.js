@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 'use strict'
 
-const program = require('commander');
+import { program } from 'commander';
 
-const fs   = require('fs');
-const chalk = require('chalk');
-const Mustache = require('mustache');
-const loadConfig = require('./lib/loadConfig.js');
+import fs from 'fs';
+import chalk from 'chalk';
+import Mustache from 'mustache';
+import loadConfig from './lib/loadConfig.js';
 
 program
   .option('-c, --config-file <config-file>', 'Configuration file')
@@ -15,48 +15,50 @@ program
   .option('-o, --output-directory [shots-dir]', 'Output directory for tests, directory in config file')
   .parse(process.argv);
 
-let domains = program.args;
-const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
-const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
-config.directory = shotsDir;
-
-/**
- * Template variables:
- * 
- * - gallery_generated
- * - paths
- * -   .alias
- * -   .domain1name
- * -   .domain1url
- * -   .domain2name
- * -   .domain2url
- * -   .diffname
- * -   .widths
- * -     .width
- * -     .img1url
- * -     .thumb1url
- * -     .img2url
- * -     .thumb2url
- * -     .imgdiffurl
- * -     .thumbdiffurl
- * -     .diff
- * -     .threshold
- */
-
-const variables = {};
-
-// Generate path blocks with numeric keys to allow us to order correctly
 try {
+  let domains = program.args;
+  const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
+  const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
+  config.directory = shotsDir;
+
+  /**
+   * Template variables:
+   *
+   * - gallery_generated
+   * - paths
+   * -   .alias
+   * -   .domain1name
+   * -   .domain1url
+   * -   .domain2name
+   * -   .domain2url
+   * -   .diffname
+   * -   .widths
+   * -     .width
+   * -     .img1url
+   * -     .thumb1url
+   * -     .img2url
+   * -     .thumb2url
+   * -     .imgdiffurl
+   * -     .thumbdiffurl
+   * -     .diff
+   * -     .threshold
+   */
+
+  const variables = {};
+
+  // Generate path blocks with numeric keys to allow us to order correctly
   loadPaths(config)
     .then((paths) => {
       variables.paths = paths;
-      variables.gallery_generated = new Date(); 
+      variables.gallery_generated = new Date();
       saveGallery(config, variables)
         .then(() => console.log(chalk.green('Gallery generated.')));
     });
 } catch (e) {
-  console.error(e);
-  process.exit(1);
+  if (program.debug) {
+    console.error(e);
+  }
+  program.error(e.message);
 }
 
 async function loadPaths(config) {
@@ -65,7 +67,7 @@ async function loadPaths(config) {
     const basePath = `${config.directory}/${path}`;
     const thumbPath = `thumbnails/${path}`;
     const imgPath = `${path}`;
-    
+
     let maxDiff = 0;
     const widths = config.screen_widths.map((width) => {
       let threshold = '';
@@ -105,7 +107,7 @@ async function loadPaths(config) {
     });
     return agg;
   }, []);
-  // At this point sortpaths is an array of objects, each object has widths 
+  // At this point sortpaths is an array of objects, each object has widths
   // (an array of objects) and maxwidth
   sortpaths.sort((a, b) => (a.maxDiff * 100) < (b.maxDiff * 100))
   return sortpaths;

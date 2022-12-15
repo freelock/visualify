@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 'use strict'
 
-const program = require('commander');
+import { program } from 'commander';
 
-const fs   = require('fs');
-const sharp = require('sharp');
-const chalk = require('chalk');
-const loadConfig = require('./lib/loadConfig.js');
+import fs from 'fs';
+import chalk from 'chalk';
+import sharp from 'sharp';
+import loadConfig from './lib/loadConfig.js';
 
 program
   .option('-c, --config-file <config-file>', 'Configuration file')
@@ -16,19 +16,21 @@ program
   .parse(process.argv);
 
 let domains = program.args;
-const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
-const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
-config.directory = shotsDir;
-
-const thumb_width = config.gallery.thumb_width || 200;
-const thumb_height = config.gallery.thumb_height || 400;
-
 try{
+  const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
+  const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
+  config.directory = shotsDir;
+
+  const thumb_width = config.gallery.thumb_width || 200;
+  const thumb_height = config.gallery.thumb_height || 400;
+
   createThumbs(config, thumb_width, thumb_height)
     .then(() => console.log(chalk.green('Thumbnails Generated!')));
 } catch (e) {
-  console.error(e);
-  process.exit(1);
+  if (program.debug) {
+    console.error(e);
+  }
+  program.error(e.message);
 }
 
 async function createThumbs(config, thumb_width, thumb_height) {

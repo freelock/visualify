@@ -17,8 +17,14 @@ program
 
 let domains = program.args;
 try{
-  const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
-  const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
+  const {
+    defaultsFile,
+    configFile,
+    outputDirectory,
+    debug,
+  } = program.opts();
+  const config = loadConfig.load(defaultsFile, configFile, domains);
+  const shotsDir = outputDirectory ? outputDirectory : config.directory;
   config.directory = shotsDir;
 
   const thumb_width = config.gallery.thumb_width || 200;
@@ -27,7 +33,7 @@ try{
   createThumbs(config, thumb_width, thumb_height)
     .then(() => console.log(chalk.green('Thumbnails Generated!')));
 } catch (e) {
-  if (program.debug) {
+  if (debug) {
     console.error(e);
   }
   program.error(e.message);

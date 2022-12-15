@@ -6,7 +6,7 @@ import { program } from 'commander';
 import fs from 'fs';
 import chalk from 'chalk';
 import sharp from 'sharp';
-import PNG from 'pngjs';
+import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
 import loadConfig from './lib/loadConfig.js';
 
@@ -19,20 +19,26 @@ program
 
 let domains = program.args;
 try {
-  const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
-  const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
+  const {
+    defaultsFile,
+    configFile,
+    outputDirectory,
+    debug,
+  } = program.opts();
+  const config = loadConfig.load(defaultsFile, configFile, domains);
+  const shotsDir = outputDirectory ? outputDirectory : config.directory;
   config.directory = shotsDir;
 
-  compareShots(config, program)
+  compareShots(config)
     .then(() => console.log(chalk.blue('Comparisons done!')));
 } catch(e) {
-  if (program.debug) {
+  if (debug) {
     console.error(e);
   }
   program.error(e.message);
 }
 
-async function compareShots(config, program) {
+async function compareShots(config) {
   const paths = Object.keys(config.paths).reduce((acc,path) => {
     const widths = config.screen_widths.map((width) => {
       const domains = Object.keys(config.domains).reduce((out, domain) => {
@@ -41,6 +47,7 @@ async function compareShots(config, program) {
       }, {});
       domains.diff = `${config.directory}/${path}/${width}_chrome_diff.png`;
       domains.log = `${config.directory}/${path}/${width}_chrome_data.txt`;
+      domains.width = width;
       return domains;
     });
     acc = [
@@ -52,6 +59,7 @@ async function compareShots(config, program) {
   // paths is now a flat array of objects
   for (const screenpath of paths) {
     console.log(chalk.blue(`diffing ${screenpath.diff}`));
+
     await imageDiff(screenpath, config);
   }
 }
@@ -70,27 +78,40 @@ async function imageDiff(items, config) {
 
   let meta1 = await image1.metadata();
   let meta2 = await image2.metadata();
-  const width = Math.max(meta1.width, meta2.width);
-  if (meta1.width != meta2.width) {
-    if (meta1.width > meta2.width) {
-      console.log(chalk.yellow(`img2 narrower. Changing ${meta2.width} to ${width}.`));
-      image2
-        .resize({width: width, position:"left", withoutEnlargement: true})
-        .extend({top: 0, bottom: 0, left: 0, right: (width - meta2.width), background: {r: 255, g:255, b:0, alpha:1}});
-//        .toBuffer();
-//      img2 = PNG.sync.read(img2);
-      img2changed = true;
-    } else {
+  let width = Math.max(meta1.width, meta2.width);
+  if (width > items.width) {
+    console.log(`Updating width ${width} to ${items.width}`);
+    width = items.width;
+  }
+    if (meta1.width < width) {
       console.log(chalk.yellow(`img1 narrower. Changing ${meta1.width} to ${width}.`));
-      //img1 = await sharp1
       image1
         .resize({width: width, position:"left", withoutEnlargement: true})
         .extend({top: 0, bottom: 0, left: 0, right: (width - meta1.width), background: {r: 255, g:255, b:0, alpha:1}});
-       // .toBuffer();
-     // img1 = PNG.sync.read(img1);
+//        .toBuffer();
+//      img2 = PNG.sync.read(img2);
+      img1changed = true;
+    } else if (meta1.width > width) {
+      console.log(chalk.yellow(`img1 wider. Changing ${meta1.width} to ${width}.`));
+      image1
+        .extract({width: width, top: 0, left: 0, height: meta1.height });
       img1changed = true;
     }
-  }
+    if (meta2.width < width) {
+      console.log(chalk.yellow(`img2 narrower. Changing ${meta2.width} to ${width}.`));
+      //img1 = await sharp1
+      image2
+        .resize({width: width, position:"left", withoutEnlargement: true})
+        .extend({top: 0, bottom: 0, left: 0, right: (width - meta2.width), background: {r: 255, g:255, b:0, alpha:1}});
+       // .toBuffer();
+     // img1 = PNG.sync.read(img1);
+      img2changed = true;
+    } else if (meta2.width > width) {
+      console.log(chalk.yellow(`img2 wider. Changing ${meta2.width} to ${width}.`));
+      image2
+        .extract({width: width, top: 0, left: 0, height: meta2.height });
+      img2changed = true;
+    }
 
   const height = Math.max(meta1.height, meta2.height);
   if (meta1.height != meta2.height){

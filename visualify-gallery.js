@@ -7,6 +7,8 @@ import fs from 'fs';
 import chalk from 'chalk';
 import Mustache from 'mustache';
 import loadConfig from './lib/loadConfig.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 program
   .option('-c, --config-file <config-file>', 'Configuration file')
@@ -17,8 +19,14 @@ program
 
 try {
   let domains = program.args;
-  const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
-  const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
+  const {
+    defaultsFile,
+    configFile,
+    outputDirectory,
+    debug,
+  } = program.opts();
+  const config = loadConfig.load(defaultsFile, configFile, domains);
+  const shotsDir = outputDirectory ? outputDirectory : config.directory;
   config.directory = shotsDir;
 
   /**
@@ -55,7 +63,7 @@ try {
         .then(() => console.log(chalk.green('Gallery generated.')));
     });
 } catch (e) {
-  if (program.debug) {
+  if (debug) {
     console.error(e);
   }
   program.error(e.message);
@@ -109,11 +117,15 @@ async function loadPaths(config) {
   }, []);
   // At this point sortpaths is an array of objects, each object has widths
   // (an array of objects) and maxwidth
-  sortpaths.sort((a, b) => (a.maxDiff * 100) < (b.maxDiff * 100))
+  const sorted = sortpaths.sort((a, b) => {
+    return (b.maxDiff * 100) - (a.maxDiff * 100);
+  });
   return sortpaths;
 }
 
 async function saveGallery(config, variables) {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
   const template = fs.readFileSync(`${__dirname}/configs/${config.gallery.template}.mustache`, 'utf8');
   const rendered = Mustache.render(template, variables);
   fs.writeFileSync(`${config.directory}/gallery.html`, rendered);

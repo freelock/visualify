@@ -7,6 +7,8 @@ import chalk from 'chalk';
 import loadConfig from './lib/loadConfig.js';
 import isDocker from 'is-docker';
 import puppeteer from 'puppeteer';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const browserOptions = {};
 
@@ -28,11 +30,18 @@ program
   .option('-o, --output-directory [shots-dir]', 'Output directory for tests, directory in config file')
   .parse(process.argv);
 
-  let domains = program.args;
+let domains = program.args;
 try {
-  const config = loadConfig.load(program.defaultsFile, program.configFile, domains);
+  const {
+    defaultsFile,
+    configFile,
+    outputDirectory,
+    debug,
+    allowRoot,
+  } = program.opts();
+  const config = loadConfig.load(defaultsFile, configFile, domains);
 
-  const shotsDir = program.outputDirectory ? program.outputDirectory : config.directory;
+  const shotsDir = outputDirectory ? outputDirectory : config.directory;
   config.directory = shotsDir;
 
   // Set up directories
@@ -44,6 +53,8 @@ try {
   });
 
   // Read adblock hosts...
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
   const hostFile = fs.readFileSync(`${__dirname}/hosts.txt`, 'utf8').split('\n');
   const hosts = hostFile.reduce((agg, line) => {
     const frags = line.split(' ');
@@ -58,32 +69,32 @@ try {
     requestOpts = {...requestOpts, ...config.requestOpts};
   }
 
-  capture(config, program)
+  capture(config, debug, allowRoot)
     .then(() => console.log(chalk.green('Screenshots done!')))
     .catch((e) => {
       console.error(e);
       process.exit(1);
     });
 } catch (e) {
-  if (program.debug) {
+  if (debug) {
     console.error(e);
   }
   program.error(e.message);
 }
 
-async function capture(config, program) {
-  let browser, path
+async function capture(config, debug, allowRoot) {
+  let path
   try {
-    if (program.debug) {
+    if (debug) {
       browserOptions.headless = false;
     }
-    if (program.allowRoot) {
+    if (allowRoot) {
       browserOptions.args = ['--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage'];
     }
     browserOptions.ignoreHTTPSErrors = true;
-    browser = await puppeteer.launch(browserOptions);
+    const browser = await puppeteer.launch(browserOptions);
     // Create snapshots -- can't use Array.map here because it launches too many browsers
     for (path in config.paths) {
       await retry(snapPath, [path, config, browser]);
@@ -154,8 +165,9 @@ async function snapPath(path, config, browser) {
       };
     });
     await page.goto(url, requestOpts);
-    for (item in filenames) {
+    for (let item in filenames) {
       await page.setViewport(filenames[item].width);
+      const height = page.viewport().height;
       await page.screenshot({path: filenames[item].filepath, fullPage: true});
       console.log(chalk.green(`Snapped ${filenames[item].filepath}`));
     }

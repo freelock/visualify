@@ -83,10 +83,13 @@ try {
 }
 
 async function capture(config, debug, allowRoot) {
-  let path
+  let path;
+  let browser;
   try {
     if (debug) {
       browserOptions.headless = false;
+    } else {
+      browserOptions.headless = 'new';
     }
     if (allowRoot) {
       browserOptions.args = ['--no-sandbox',
@@ -94,7 +97,7 @@ async function capture(config, debug, allowRoot) {
         '--disable-dev-shm-usage'];
     }
     browserOptions.ignoreHTTPSErrors = true;
-    const browser = await puppeteer.launch(browserOptions);
+    browser = await puppeteer.launch(browserOptions);
     // Create snapshots -- can't use Array.map here because it launches too many browsers
     for (path in config.paths) {
       await retry(snapPath, [path, config, browser]);

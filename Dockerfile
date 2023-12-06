@@ -1,8 +1,13 @@
-FROM ubuntu:22.04
+FROM        docker.freelock.com/freelock/php81
 LABEL author=Freelock email=john@freelock.com
 
+# Reset this, don't start a php process
+CMD ['bash']
+
+USER root
 RUN export DEBIAN_FRONTEND=noninteractive && \
   apt-get update && apt-get -y install \
+    curl \
     ca-certificates \
     libappindicator1 libasound2 libatk1.0-0 \
     libatk-bridge2.0-0 \
@@ -14,7 +19,13 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 \
     libxrandr2 libxrender1 libxss1 libxtst6 \
     gconf-service lsb-release wget xdg-utils \
-    fonts-liberation gnupg gnupg2
+    fonts-liberation gnupg gnupg2 \
+    openssh-client \
+    jq \
+    expect-dev \
+    mysql-client \
+    zip \
+    rsync
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
     wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -28,7 +39,7 @@ RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
   apt-get install -y nodejs \
-  php-cli php-dom jq unzip openssh-client
+  jq unzip openssh-client
 # Install composer
 RUN bash -c "wget http://getcomposer.org/composer.phar && mv composer.phar /usr/local/bin/composer \
   && chmod 755 /usr/local/bin/composer"
@@ -45,3 +56,4 @@ ADD configs/* /opt/visualify/configs/
 RUN npm install
 RUN npm link
 ADD hosts.txt /opt/visualify/
+ENV COMPOSER_ALLOW_SUPERUSER=1

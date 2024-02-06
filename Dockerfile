@@ -1,4 +1,4 @@
-FROM        docker.freelock.com/freelock/php81
+FROM        git.freelock.com/freelock/php81
 LABEL author=Freelock email=john@freelock.com
 
 # Reset this, don't start a php process

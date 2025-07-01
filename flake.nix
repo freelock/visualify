@@ -11,86 +11,30 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         
-        visualify = pkgs.buildNpmPackage rec {
-          pname = "visualify";
-          version = "1.0.0";
-
-          src = ./.;
-
-          npmDepsHash = "sha256-zD0Y6n1yIVLmITWnXYG+4jeBhITpmSdHelKt5ACp/KI=";
-
-          nativeBuildInputs = with pkgs; [
-            nodejs_20
-            python3
-            pkg-config
-            makeWrapper
-            # Sharp dependencies
-            vips
-            glib
-            cairo
-            pango
-            libjpeg
-            giflib
-            librsvg
-          ];
-
-          buildInputs = with pkgs; [
-            chromium
-            vips
-          ];
-
-          # Environment variables to help Sharp find system libraries
-          SHARP_IGNORE_GLOBAL_LIBVIPS = "1";
-          PKG_CONFIG_PATH = "${pkgs.vips.dev}/lib/pkgconfig:${pkgs.glib.dev}/lib/pkgconfig";
-          
-          # Skip npm audit and fund during build
-          npmFlags = [ "--no-audit" "--no-fund" ];
-          
-          # Don't run npm build (there's no build script)
-          dontNpmBuild = true;
-
-          # Custom post-install to wrap the binary
-          postInstall = ''
-            wrapProgram $out/bin/visualify \
-              --set PUPPETEER_SKIP_CHROMIUM_DOWNLOAD 1 \
-              --set PUPPETEER_EXECUTABLE_PATH ${pkgs.chromium}/bin/chromium \
-              --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.chromium ]}
-          '';
-
-          meta = with pkgs.lib; {
-            description = "Visual Regression Testing Tool";
-            longDescription = ''
-              Visualify is a JavaScript visual regression testing tool inspired by Wraith.
-              It uses Puppeteer for screenshot capture and Pixelmatch for image comparison.
-              Sharp is used for image processing (thumbnails and resizing).
-              
-              Features:
-              - Capture screenshots across multiple screen widths
-              - Compare screenshots between different site versions
-              - Generate thumbnails and HTML galleries of test results
-              - Docker container support
-            '';
-            homepage = "https://github.com/freelock/visualify";
-            license = licenses.gpl3Plus;
-            maintainers = [ ];
-            platforms = platforms.all;
-            mainProgram = "visualify";
-          };
-        };
+        # Simple Node.js script wrapper for development
+        visualify-dev = pkgs.writeShellScriptBin "visualify" ''
+          export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1
+          export VISUALIFY_ORIGINAL_CWD="$PWD"
+          cd ${toString ./.}
+          exec ${pkgs.nodejs_20}/bin/node index.js "$@"
+        '';
 
       in {
         packages = {
-          default = visualify;
-          visualify = visualify;
+          default = visualify-dev;
+          visualify = visualify-dev;
+        };
+        
+        # Override for nix-shell -p usage
+        legacyPackages = {
+          visualify = visualify-dev;
         };
 
-        # Development shell with visualify and its dependencies
+        # Development shell with visualify command available
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             nodejs_20
-            chromium
-            vips
-            visualify
+            visualify-dev
           ];
           
           shellHook = ''
@@ -101,18 +45,24 @@
             echo "  visualify thumbnail - Generate thumbnails"
             echo "  visualify gallery   - Create HTML result gallery"
             echo ""
-            echo "Chrome/Chromium is available at: ${pkgs.chromium}/bin/chromium"
+            echo "Using system Chrome/Chromium browser"
+            echo "Make sure Chrome or Chromium is installed on your system"
+            
+            # Install dependencies if needed
+            if [ ! -d "node_modules" ]; then
+              echo "Installing npm dependencies..."
+              npm install
+            fi
           '';
           
-          # Environment variables for Puppeteer
+          # Environment variables for Puppeteer to use system Chrome
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "1";
-          PUPPETEER_EXECUTABLE_PATH = "${pkgs.chromium}/bin/chromium";
         };
 
         # Application for nix run
         apps.default = {
           type = "app";
-          program = "${visualify}/bin/visualify";
+          program = "${visualify-dev}/bin/visualify";
         };
       }
     );

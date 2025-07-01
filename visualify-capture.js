@@ -116,22 +116,29 @@ async function capture(config, debug, allowRoot) {
       try {
         // Try to find chrome/chromium using which command
         let chromePath;
-        try {
-          chromePath = execSync('which google-chrome', { encoding: 'utf8' }).trim();
-        } catch {
+        const browserNames = [
+          'google-chrome-stable',
+          'google-chrome',
+          'google-chrome-unstable',
+          'chromium-browser',
+          'chromium',
+          'chrome'
+        ];
+        
+        for (const browserName of browserNames) {
           try {
-            chromePath = execSync('which chromium', { encoding: 'utf8' }).trim();
-          } catch {
-            try {
-              chromePath = execSync('which chromium-browser', { encoding: 'utf8' }).trim();
-            } catch {
-              try {
-                chromePath = execSync('which chrome', { encoding: 'utf8' }).trim();
-              } catch {
-                console.warn('Warning: Could not find Chrome or Chromium. Make sure it is installed and in your PATH.');
-              }
+            chromePath = execSync(`which ${browserName}`, { encoding: 'utf8' }).trim();
+            if (chromePath) {
+              console.log(`Found browser: ${browserName} at ${chromePath}`);
+              break;
             }
+          } catch {
+            // Continue to next browser
           }
+        }
+        
+        if (!chromePath) {
+          console.warn('Warning: Could not find Chrome or Chromium. Make sure it is installed and in your PATH.');
         }
         if (chromePath) {
           browserOptions.executablePath = chromePath;

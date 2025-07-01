@@ -11,6 +11,52 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         
+        # Proper Node.js package
+        visualify-package = pkgs.buildNpmPackage {
+          pname = "visualify";
+          version = "1.0.0";
+          src = ./.;
+          
+          npmDepsHash = "sha256-ZM8uVPi2AExmokDc7DvVrXs1dStG5j8M6YmkSUdndUw=";
+          
+          # Skip download of Puppeteer's Chromium
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "1";
+          
+          # Skip npm build since there's no build script
+          dontNpmBuild = true;
+          
+          # Build dependencies for sharp
+          nativeBuildInputs = with pkgs; [ 
+            pkg-config 
+            python3
+            makeWrapper
+          ];
+          
+          buildInputs = with pkgs; [ 
+            vips
+            glib
+            libgsf
+            fftw
+            orc
+            lcms2
+            imagemagick
+          ];
+          
+          # Configure sharp to use system libvips
+          preBuild = ''
+            export SHARP_IGNORE_GLOBAL_LIBVIPS=0
+            export PKG_CONFIG_PATH="${pkgs.vips}/lib/pkgconfig:$PKG_CONFIG_PATH"
+          '';
+          
+          postInstall = ''
+            # Create wrapper script
+            makeWrapper ${pkgs.nodejs_20}/bin/node $out/bin/visualify \
+              --add-flags "$out/lib/node_modules/visualify/index.js" \
+              --set PUPPETEER_SKIP_CHROMIUM_DOWNLOAD 1 \
+              --run 'export VISUALIFY_ORIGINAL_CWD="$PWD"'
+          '';
+        };
+        
         # Simple Node.js script wrapper for development
         visualify-dev = pkgs.writeShellScriptBin "visualify" ''
           export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1
@@ -21,13 +67,14 @@
 
       in {
         packages = {
-          default = visualify-dev;
-          visualify = visualify-dev;
+          default = visualify-package;
+          visualify = visualify-package;
+          visualify-dev = visualify-dev;
         };
         
         # Override for nix-shell -p usage
         legacyPackages = {
-          visualify = visualify-dev;
+          visualify = visualify-package;
         };
 
         # Development shell with visualify command available
@@ -62,7 +109,7 @@
         # Application for nix run
         apps.default = {
           type = "app";
-          program = "${visualify-dev}/bin/visualify";
+          program = "${visualify-package}/bin/visualify";
         };
       }
     );

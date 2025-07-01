@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-require('./visualify-capture');
-require('./visualify-compare');
-require('./visualify-thumbnail');
-require('./visualify-gallery');
+import './visualify-capture.js';
+import './visualify-compare.js';
+import './visualify-thumbnail.js';
+import './visualify-gallery.js';

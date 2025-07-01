@@ -81,7 +81,7 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             nodejs_20
-            visualify-dev
+            visualify-package
           ];
           
           shellHook = ''

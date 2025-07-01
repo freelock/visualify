@@ -129,11 +129,56 @@ async function capture(config, debug, allowRoot) {
           try {
             chromePath = execSync(`which ${browserName}`, { encoding: 'utf8' }).trim();
             if (chromePath) {
-              console.log(`Found browser: ${browserName} at ${chromePath}`);
-              break;
+              // Verify the executable actually exists and is executable
+              if (fs.existsSync(chromePath)) {
+                console.log(`Found browser: ${browserName} at ${chromePath}`);
+                break;
+              } else {
+                console.log(`Browser ${browserName} found at ${chromePath} but file doesn't exist, trying next...`);
+                chromePath = null;
+              }
             }
           } catch {
             // Continue to next browser
+          }
+        }
+        
+        // If which command failed, try common static paths including nix store paths
+        if (!chromePath) {
+          const commonPaths = [
+            '/usr/bin/google-chrome-stable',
+            '/usr/bin/google-chrome',
+            '/usr/bin/google-chrome-unstable',
+            '/usr/bin/chromium-browser',
+            '/usr/bin/chromium',
+            '/usr/local/bin/chromium',
+            '/snap/bin/chromium',
+            '/bin/google-chrome-stable',
+            '/bin/google-chrome',
+            '/bin/chromium'
+          ];
+          
+          // Also check for nix store paths by looking at symlinks
+          if (fs.existsSync('/bin/google-chrome-stable')) {
+            try {
+              const realPath = fs.realpathSync('/bin/google-chrome-stable');
+              if (fs.existsSync(realPath)) {
+                chromePath = realPath;
+                console.log(`Found browser via symlink resolution: ${realPath}`);
+              }
+            } catch (e) {
+              console.log('Failed to resolve symlink for /bin/google-chrome-stable');
+            }
+          }
+          
+          if (!chromePath) {
+            for (const browserPath of commonPaths) {
+              if (fs.existsSync(browserPath)) {
+                chromePath = browserPath;
+                console.log(`Found browser at static path: ${browserPath}`);
+                break;
+              }
+            }
           }
         }
         

@@ -6,6 +6,7 @@ import { program } from 'commander';
 import fs from 'fs';
 import chalk from 'chalk';
 import sharp from 'sharp';
+import path from 'path';
 import loadConfig from './lib/loadConfig.js';
 
 program
@@ -26,7 +27,17 @@ const debug = opts.debug || process.env.VISUALIFY_DEBUG === 'true';
 
 try{
   const config = loadConfig.load(defaultsFile, configFile, domains);
-  const shotsDir = outputDirectory ? outputDirectory : config.directory;
+  
+  let shotsDir = outputDirectory ? outputDirectory : config.directory;
+  
+  // Resolve output directory relative to original working directory
+  if (shotsDir && !path.isAbsolute(shotsDir)) {
+    const originalCwd = process.env.VISUALIFY_ORIGINAL_CWD;
+    if (originalCwd) {
+      shotsDir = path.resolve(originalCwd, shotsDir);
+    }
+  }
+  
   config.directory = shotsDir;
 
   const thumb_width = config.gallery.thumb_width || 200;
@@ -42,9 +53,21 @@ try{
 }
 
 async function createThumbs(config, thumb_width, thumb_height) {
+  // Ensure thumbnails directory exists
+  const thumbnailsDir = `${config.directory}/thumbnails`;
+  if (!fs.existsSync(thumbnailsDir)) {
+    fs.mkdirSync(thumbnailsDir, { recursive: true });
+  }
+  
   for (const path in config.paths) {
     const origPath = `${config.directory}/${path}`;
     const thumbPath = `${config.directory}/thumbnails/${path}`;
+    
+    // Ensure the specific thumbnail path exists
+    if (!fs.existsSync(thumbPath)) {
+      fs.mkdirSync(thumbPath, { recursive: true });
+    }
+    
     const originals = fs.readdirSync(origPath);
     for (const file of originals) {
       if (file.indexOf('.png') > 0) {

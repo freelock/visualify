@@ -28,7 +28,17 @@ const debug = opts.debug || process.env.VISUALIFY_DEBUG === 'true';
 
 try {
   const config = loadConfig.load(defaultsFile, configFile, domains);
-  const shotsDir = outputDirectory ? outputDirectory : config.directory;
+  
+  let shotsDir = outputDirectory ? outputDirectory : config.directory;
+  
+  // Resolve output directory relative to original working directory
+  if (shotsDir && !path.isAbsolute(shotsDir)) {
+    const originalCwd = process.env.VISUALIFY_ORIGINAL_CWD;
+    if (originalCwd) {
+      shotsDir = path.resolve(originalCwd, shotsDir);
+    }
+  }
+  
   config.directory = shotsDir;
 
   /**

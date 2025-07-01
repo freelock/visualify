@@ -17,14 +17,16 @@ program
   .option('-o, --output-directory [shots-dir]', 'Output directory for tests, directory in config file')
   .parse(process.argv);
 
+let domains = program.args;
+const opts = program.opts();
+
+// Get options from command line or environment variables (global options passed from parent)
+const defaultsFile = opts.defaultsFile || process.env.VISUALIFY_DEFAULTS_FILE;
+const configFile = opts.configFile || process.env.VISUALIFY_CONFIG_FILE;
+const outputDirectory = opts.outputDirectory || process.env.VISUALIFY_OUTPUT_DIRECTORY;
+const debug = opts.debug || process.env.VISUALIFY_DEBUG === 'true';
+
 try {
-  let domains = program.args;
-  const {
-    defaultsFile,
-    configFile,
-    outputDirectory,
-    debug,
-  } = program.opts();
   const config = loadConfig.load(defaultsFile, configFile, domains);
   const shotsDir = outputDirectory ? outputDirectory : config.directory;
   config.directory = shotsDir;

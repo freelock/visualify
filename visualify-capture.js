@@ -9,6 +9,7 @@ import isDocker from 'is-docker';
 import puppeteer from 'puppeteer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const browserOptions = {};
 
@@ -31,17 +32,28 @@ program
   .parse(process.argv);
 
 let domains = program.args;
+const opts = program.opts();
+
+// Get options from command line or environment variables (global options passed from parent)
+const defaultsFile = opts.defaultsFile || process.env.VISUALIFY_DEFAULTS_FILE;
+const configFile = opts.configFile || process.env.VISUALIFY_CONFIG_FILE;
+const outputDirectory = opts.outputDirectory || process.env.VISUALIFY_OUTPUT_DIRECTORY;
+const debug = opts.debug || process.env.VISUALIFY_DEBUG === 'true';
+const allowRoot = opts.allowRoot;
+
 try {
-  const {
-    defaultsFile,
-    configFile,
-    outputDirectory,
-    debug,
-    allowRoot,
-  } = program.opts();
   const config = loadConfig.load(defaultsFile, configFile, domains);
 
-  const shotsDir = outputDirectory ? outputDirectory : config.directory;
+  let shotsDir = outputDirectory ? outputDirectory : config.directory;
+  
+  // Resolve output directory relative to original working directory
+  if (shotsDir && !path.isAbsolute(shotsDir)) {
+    const originalCwd = process.env.VISUALIFY_ORIGINAL_CWD;
+    if (originalCwd) {
+      shotsDir = path.resolve(originalCwd, shotsDir);
+    }
+  }
+  
   config.directory = shotsDir;
 
   // Set up directories
@@ -97,6 +109,38 @@ async function capture(config, debug, allowRoot) {
         '--disable-dev-shm-usage'];
     }
     browserOptions.ignoreHTTPSErrors = true;
+    
+    // Set browser executable path if not already set
+    if (!browserOptions.executablePath && !process.env.PUPPETEER_EXECUTABLE_PATH) {
+      // Try to find Chrome or Chromium in common locations
+      try {
+        // Try to find chrome/chromium using which command
+        let chromePath;
+        try {
+          chromePath = execSync('which google-chrome', { encoding: 'utf8' }).trim();
+        } catch {
+          try {
+            chromePath = execSync('which chromium', { encoding: 'utf8' }).trim();
+          } catch {
+            try {
+              chromePath = execSync('which chromium-browser', { encoding: 'utf8' }).trim();
+            } catch {
+              try {
+                chromePath = execSync('which chrome', { encoding: 'utf8' }).trim();
+              } catch {
+                console.warn('Warning: Could not find Chrome or Chromium. Make sure it is installed and in your PATH.');
+              }
+            }
+          }
+        }
+        if (chromePath) {
+          browserOptions.executablePath = chromePath;
+        }
+      } catch (e) {
+        console.warn('Warning: Error finding browser:', e.message);
+      }
+    }
+    
     browser = await puppeteer.launch(browserOptions);
     // Create snapshots -- can't use Array.map here because it launches too many browsers
     for (path in config.paths) {
@@ -104,7 +148,9 @@ async function capture(config, debug, allowRoot) {
     }
     return browser.close();
   } catch (e) {
-    browser.close();
+    if (browser) {
+      browser.close();
+    }
     console.error(e);
     process.exit(1);
   }

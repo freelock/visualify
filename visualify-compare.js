@@ -8,6 +8,7 @@ import chalk from 'chalk';
 import sharp from 'sharp';
 import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
+import path from 'path';
 import loadConfig from './lib/loadConfig.js';
 
 program
@@ -18,15 +19,27 @@ program
   .parse(process.argv);
 
 let domains = program.args;
+const opts = program.opts();
+
+// Get options from command line or environment variables (global options passed from parent)
+const defaultsFile = opts.defaultsFile || process.env.VISUALIFY_DEFAULTS_FILE;
+const configFile = opts.configFile || process.env.VISUALIFY_CONFIG_FILE;
+const outputDirectory = opts.outputDirectory || process.env.VISUALIFY_OUTPUT_DIRECTORY;
+const debug = opts.debug || process.env.VISUALIFY_DEBUG === 'true';
+
 try {
-  const {
-    defaultsFile,
-    configFile,
-    outputDirectory,
-    debug,
-  } = program.opts();
   const config = loadConfig.load(defaultsFile, configFile, domains);
-  const shotsDir = outputDirectory ? outputDirectory : config.directory;
+  
+  let shotsDir = outputDirectory ? outputDirectory : config.directory;
+  
+  // Resolve output directory relative to original working directory
+  if (shotsDir && !path.isAbsolute(shotsDir)) {
+    const originalCwd = process.env.VISUALIFY_ORIGINAL_CWD;
+    if (originalCwd) {
+      shotsDir = path.resolve(originalCwd, shotsDir);
+    }
+  }
+  
   config.directory = shotsDir;
 
   compareShots(config)

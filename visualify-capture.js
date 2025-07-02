@@ -114,69 +114,140 @@ async function capture(config, debug, allowRoot) {
     if (!browserOptions.executablePath && !process.env.PUPPETEER_EXECUTABLE_PATH) {
       // Try to find Chrome or Chromium in common locations
       try {
-        // Try to find chrome/chromium using which command
+        // Try to find chrome/chromium using platform-appropriate commands
         let chromePath;
-        const browserNames = [
-          'google-chrome-stable',
-          'google-chrome',
-          'google-chrome-unstable',
-          'chromium-browser',
-          'chromium',
-          'chrome'
-        ];
+        const isWindows = process.platform === 'win32';
+        const isMac = process.platform === 'darwin';
         
-        for (const browserName of browserNames) {
-          try {
-            chromePath = execSync(`which ${browserName}`, { encoding: 'utf8' }).trim();
-            if (chromePath) {
-              // Verify the executable actually exists and is executable
-              if (fs.existsSync(chromePath)) {
-                console.log(`Found browser: ${browserName} at ${chromePath}`);
-                break;
-              } else {
-                console.log(`Browser ${browserName} found at ${chromePath} but file doesn't exist, trying next...`);
-                chromePath = null;
-              }
-            }
-          } catch {
-            // Continue to next browser
-          }
-        }
-        
-        // If which command failed, try common static paths including nix store paths
-        if (!chromePath) {
-          const commonPaths = [
-            '/usr/bin/google-chrome-stable',
-            '/usr/bin/google-chrome',
-            '/usr/bin/google-chrome-unstable',
-            '/usr/bin/chromium-browser',
-            '/usr/bin/chromium',
-            '/usr/local/bin/chromium',
-            '/snap/bin/chromium',
-            '/bin/google-chrome-stable',
-            '/bin/google-chrome',
-            '/bin/chromium'
+        if (isWindows) {
+          // Windows browser detection
+          const windowsPaths = [
+            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Users\\' + (process.env.USERNAME || process.env.USER || 'Default') + '\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files\\Chromium\\Application\\chromium.exe',
+            'C:\\Program Files (x86)\\Chromium\\Application\\chromium.exe'
           ];
           
-          // Also check for nix store paths by looking at symlinks
-          if (fs.existsSync('/bin/google-chrome-stable')) {
-            try {
-              const realPath = fs.realpathSync('/bin/google-chrome-stable');
-              if (fs.existsSync(realPath)) {
-                chromePath = realPath;
-                console.log(`Found browser via symlink resolution: ${realPath}`);
-              }
-            } catch (e) {
-              console.log('Failed to resolve symlink for /bin/google-chrome-stable');
+          for (const browserPath of windowsPaths) {
+            if (fs.existsSync(browserPath)) {
+              chromePath = browserPath;
+              console.log(`Found browser at: ${browserPath}`);
+              break;
             }
           }
           
+          // Try using where command on Windows
           if (!chromePath) {
-            for (const browserPath of commonPaths) {
-              if (fs.existsSync(browserPath)) {
-                chromePath = browserPath;
-                console.log(`Found browser at static path: ${browserPath}`);
-                break;
+            const windowsBrowserNames = ['chrome.exe', 'chromium.exe'];
+            for (const browserName of windowsBrowserNames) {
+              try {
+                chromePath = execSync(`where ${browserName}`, { encoding: 'utf8' }).trim().split('\n')[0];
+                if (chromePath && fs.existsSync(chromePath)) {
+                  console.log(`Found browser via where command: ${browserName} at ${chromePath}`);
+                  break;
+                }
+              } catch {
+                // Continue to next browser
+              }
+            }
+          }
+        } else if (isMac) {
+          // macOS browser detection
+          const macPaths = [
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            '/Applications/Chromium.app/Contents/MacOS/Chromium',
+            '/usr/local/bin/chrome',
+            '/usr/local/bin/chromium'
+          ];
+          
+          for (const browserPath of macPaths) {
+            if (fs.existsSync(browserPath)) {
+              chromePath = browserPath;
+              console.log(`Found browser at: ${browserPath}`);
+              break;
+            }
+          }
+          
+          // Try using which command on macOS
+          if (!chromePath) {
+            const macBrowserNames = ['google-chrome', 'chromium', 'chrome'];
+            for (const browserName of macBrowserNames) {
+              try {
+                chromePath = execSync(`which ${browserName}`, { encoding: 'utf8' }).trim();
+                if (chromePath && fs.existsSync(chromePath)) {
+                  console.log(`Found browser via which: ${browserName} at ${chromePath}`);
+                  break;
+                }
+              } catch {
+                // Continue to next browser
+              }
+            }
+          }
+        } else {
+          // Linux/Unix browser detection
+          const browserNames = [
+            'google-chrome-stable',
+            'google-chrome',
+            'google-chrome-unstable',
+            'chromium-browser',
+            'chromium',
+            'chrome'
+          ];
+          
+          for (const browserName of browserNames) {
+            try {
+              chromePath = execSync(`which ${browserName}`, { encoding: 'utf8' }).trim();
+              if (chromePath) {
+                // Verify the executable actually exists and is executable
+                if (fs.existsSync(chromePath)) {
+                  console.log(`Found browser: ${browserName} at ${chromePath}`);
+                  break;
+                } else {
+                  console.log(`Browser ${browserName} found at ${chromePath} but file doesn't exist, trying next...`);
+                  chromePath = null;
+                }
+              }
+            } catch {
+              // Continue to next browser
+            }
+          }
+          
+          // If which command failed, try common static paths including nix store paths
+          if (!chromePath) {
+            const commonPaths = [
+              '/usr/bin/google-chrome-stable',
+              '/usr/bin/google-chrome',
+              '/usr/bin/google-chrome-unstable',
+              '/usr/bin/chromium-browser',
+              '/usr/bin/chromium',
+              '/usr/local/bin/chromium',
+              '/snap/bin/chromium',
+              '/bin/google-chrome-stable',
+              '/bin/google-chrome',
+              '/bin/chromium'
+            ];
+            
+            // Also check for nix store paths by looking at symlinks
+            if (fs.existsSync('/bin/google-chrome-stable')) {
+              try {
+                const realPath = fs.realpathSync('/bin/google-chrome-stable');
+                if (fs.existsSync(realPath)) {
+                  chromePath = realPath;
+                  console.log(`Found browser via symlink resolution: ${realPath}`);
+                }
+              } catch (e) {
+                console.log('Failed to resolve symlink for /bin/google-chrome-stable');
+              }
+            }
+            
+            if (!chromePath) {
+              for (const browserPath of commonPaths) {
+                if (fs.existsSync(browserPath)) {
+                  chromePath = browserPath;
+                  console.log(`Found browser at static path: ${browserPath}`);
+                  break;
+                }
               }
             }
           }

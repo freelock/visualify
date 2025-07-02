@@ -17,10 +17,11 @@
           version = "1.0.0";
           src = ./.;
           
-          npmDepsHash = "sha256-ZM8uVPi2AExmokDc7DvVrXs1dStG5j8M6YmkSUdndUw=";
+          npmDepsHash = "sha256-1WHA1/KBE0biFuYNJtj2lzBpNhbyOQJCRpSTTLLRpwI=";
           
           # Skip download of Puppeteer's Chromium
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "1";
+          PUPPETEER_SKIP_DOWNLOAD = "1";
           
           # Skip npm build since there's no build script
           dontNpmBuild = true;

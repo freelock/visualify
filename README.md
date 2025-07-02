@@ -16,12 +16,48 @@ As it is, it improves upon Wraith by using headless chrome via Puppeteer, and it
 
 ## Installation
 
+### Option 1: Using Nix (Recommended)
+
+The easiest way to install and run Visualify is using Nix, which handles all dependencies automatically:
+
+#### Run directly from GitHub:
+```bash
+nix shell github:freelock/visualify
+visualify --help
+```
+
+#### Run from local clone:
+```bash
+git clone https://github.com/freelock/visualify.git
+cd visualify
+nix shell path:.
+visualify --help
+```
+
+#### Development environment:
+```bash
+git clone https://github.com/freelock/visualify.git
+cd visualify
+nix develop
+# This gives you a shell with visualify and all dependencies available
+```
+
+The Nix installation automatically:
+- Installs Node.js and all npm dependencies
+- Configures the Sharp image processing library
+- Sets up browser detection for system Chrome/Chromium
+- Works on Linux, macOS, and in containers
+
+### Option 2: Traditional Node.js Installation
+
 You must have a recent version of Node.js installed, with npm.
 
-1. Clone this repository: `git clone ...`
+1. Clone this repository: `git clone https://github.com/freelock/visualify.git`
 2. cd into the repository: `cd visualify`
 3. `npm install` to install puppeteer, sharp, and the other dependencies.
 4. `sudo npm link` to make visualify available in your $PATH.
+
+**Note:** You'll also need Chrome or Chromium installed on your system for screenshot capture.
 
 ## Usage
 
@@ -86,4 +122,10 @@ This gallery is taken straight out of Wraith, turned into a [Mustache](https://g
 
 ### visualify all
 
-This command is meant to run all 4 steps in sequence -- but it is not currently working.
+Run all 4 steps in sequence: capture, compare, thumbnail, and gallery.
+
+Example:
+
+`visualify all -c paths.yaml -o shots --debug dev http://devsite.dev prod https://mysite.prod`
+
+This command executes all phases sequentially, making it perfect for CI/CD pipelines or complete regression testing workflows. Use the `--debug` flag to see the browser during the capture phase.

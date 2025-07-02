@@ -1,0 +1,52 @@
+name: Test Nix Flake
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-flake:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Nix
+      uses: cachix/install-nix-action@v24
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+        
+    - name: Run flake tests
+      run: |
+        nix flake check
+        nix build
+        ./result/bin/visualify --help
+        
+    - name: Test development shell
+      run: |
+        nix develop --command bash -c "visualify --help"
+        
+    - name: Test all subcommands
+      run: |
+        ./result/bin/visualify capture --help
+        ./result/bin/visualify compare --help
+        ./result/bin/visualify thumbnail --help
+        ./result/bin/visualify gallery --help
+        ./result/bin/visualify all --help
+
+  test-cross-platform:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Nix
+      uses: cachix/install-nix-action@v24
+      
+    - name: Test build on ${{ matrix.os }}
+      run: |
+        nix build
+        ./result/bin/visualify --help

@@ -1,0 +1,17 @@
+browser:
+  width: [1280]
+  height: 1024
+
+domains:
+  test1: "https://example.com"
+  test2: "https://httpbin.org"
+
+paths:
+  home: "/"
+  json: "/json"
+
+directory: "test-shots"
+
+gallery:
+  thumb_width: 200
+  thumb_height: 200

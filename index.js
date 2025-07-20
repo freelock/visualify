@@ -46,6 +46,9 @@ program
   .command('compare [domain1name] [domain1url] [domain2name] [domain2url]', 'Compare captured shots', { executableFile: 'visualify-compare.js' })
   .command('thumbnail [domain1name] [domain1url] [domain2name] [domain2url]', 'Generate thumbnails', { executableFile: 'visualify-thumbnail.js' })
   .command('gallery [domain1name] [domain1url] [domain2name] [domain2url]', 'Call wraith to generate a gallery', { executableFile: 'visualify-gallery.js' })
-  .command('all','Run all steps', { executableFile: 'visualify-all.js' });
+  .command('all','Run all steps', { executableFile: 'visualify-all.js' })
+  .command('compare-dirs <golden-dir> <current-dir>', 'Compare two directories of screenshots', { executableFile: 'visualify-compare-dirs.js' })
+  .command('thumbnail-dirs <golden-dir> <current-dir>', 'Generate thumbnails from directory comparison', { executableFile: 'visualify-thumbnail-dirs.js' })
+  .command('gallery-dirs <golden-dir> <current-dir>', 'Generate HTML gallery from directory comparison', { executableFile: 'visualify-gallery-dirs.js' });
 
 program.parse(process.argv);

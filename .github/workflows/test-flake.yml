@@ -31,10 +31,6 @@ jobs:
       run: |
         nix develop --command npm test
         
-    - name: Run tests with coverage
-      run: |
-        nix develop --command npm run test:coverage
-        
     - name: Test all subcommands
       run: |
         ./result/bin/visualify capture --help

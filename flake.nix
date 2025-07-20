@@ -17,7 +17,7 @@
           version = "1.0.0";
           src = ./.;
           
-          npmDepsHash = "sha256-/o7I7uVGx6thFhUsSM299/VI91QpWX7J8DDrAigdmTk=";
+          npmDepsHash = "sha256-pnBazJI3DnJ25BCv1vqPkpghrRxjr8GcYa0GYnvQKRY=";
           
           # Skip download of Puppeteer's Chromium
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "1";

@@ -9,8 +9,8 @@ import sharp from 'sharp';
 
 program
   .option('-o, --output-directory <output-dir>', 'Output directory for thumbnails')
-  .option('--thumb-width <width>', 'Thumbnail width', parseInt, 200)
-  .option('--thumb-height <height>', 'Thumbnail height', parseInt, 400)
+  .option('--thumb-width <width>', 'Thumbnail width (default: 200)', (val) => parseInt(val, 10), 200)
+  .option('--thumb-height <height>', 'Thumbnail height (default: 400)', (val) => parseInt(val, 10), 400)
   .argument('<golden-dir>', 'Directory with reference/golden screenshots')
   .argument('<current-dir>', 'Directory with current test screenshots')
   .parse(process.argv);

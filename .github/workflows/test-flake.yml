@@ -27,6 +27,14 @@ jobs:
       run: |
         nix develop --command bash -c "visualify --help"
         
+    - name: Run unit tests
+      run: |
+        nix develop --command npm test
+        
+    - name: Run tests with coverage
+      run: |
+        nix develop --command npm run test:coverage
+        
     - name: Test all subcommands
       run: |
         ./result/bin/visualify capture --help
@@ -34,6 +42,9 @@ jobs:
         ./result/bin/visualify thumbnail --help
         ./result/bin/visualify gallery --help
         ./result/bin/visualify all --help
+        ./result/bin/visualify compare-dirs --help
+        ./result/bin/visualify thumbnail-dirs --help
+        ./result/bin/visualify gallery-dirs --help
 
   test-cross-platform:
     strategy:

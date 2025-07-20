@@ -1,3 +1,9 @@
 node_modules
 .vscode
 shots
+coverage
+*.log
+.DS_Store
+result
+test-debug
+test-thumb

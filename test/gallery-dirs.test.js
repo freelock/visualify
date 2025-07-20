@@ -60,22 +60,24 @@ describe('visualify-gallery-dirs', () => {
   });
 
   describe('with test files', () => {
-    beforeEach(() => {
-      // Create simple test PNG
-      const testPng = Buffer.from([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-        0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xDE, 0x00, 0x00, 0x00,
-        0x0C, 0x49, 0x44, 0x41, 0x54, 0x08, 0x57, 0x63, 0xF8, 0x00, 0x00, 0x00,
-        0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x37, 0x6E, 0xF9, 0x24, 0x00, 0x00,
-        0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
-      ]);
+    beforeEach(async () => {
+      const sharp = (await import('sharp')).default;
+      
+      // Create simple test PNG using Sharp
+      const testImage = await sharp({
+        create: {
+          width: 100,
+          height: 100,
+          channels: 3,
+          background: { r: 200, g: 200, b: 200 }
+        }
+      }).png().toBuffer();
 
       // Create matching images
-      fs.writeFileSync(path.join(goldenDir, 'page1.png'), testPng);
-      fs.writeFileSync(path.join(currentDir, 'page1.png'), testPng);
-      fs.writeFileSync(path.join(goldenDir, 'page2.png'), testPng);
-      fs.writeFileSync(path.join(currentDir, 'page2.png'), testPng);
+      fs.writeFileSync(path.join(goldenDir, 'page1.png'), testImage);
+      fs.writeFileSync(path.join(currentDir, 'page1.png'), testImage);
+      fs.writeFileSync(path.join(goldenDir, 'page2.png'), testImage);
+      fs.writeFileSync(path.join(currentDir, 'page2.png'), testImage);
 
       // Create comparison data files
       fs.writeFileSync(path.join(outputDir, 'page1_data.txt'), '0.5');

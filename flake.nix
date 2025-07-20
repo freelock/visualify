@@ -17,7 +17,7 @@
           version = "1.0.0";
           src = ./.;
           
-          npmDepsHash = "sha256-1WHA1/KBE0biFuYNJtj2lzBpNhbyOQJCRpSTTLLRpwI=";
+          npmDepsHash = "sha256-/o7I7uVGx6thFhUsSM299/VI91QpWX7J8DDrAigdmTk=";
           
           # Skip download of Puppeteer's Chromium
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "1";
@@ -88,10 +88,22 @@
           shellHook = ''
             echo "Visualify development environment"
             echo "Available commands:"
-            echo "  visualify capture   - Take screenshots"
-            echo "  visualify compare   - Compare screenshots"
+            echo ""
+            echo "URL-based workflow:"
+            echo "  visualify capture   - Take screenshots of websites"
+            echo "  visualify compare   - Compare captured screenshots"
             echo "  visualify thumbnail - Generate thumbnails"
             echo "  visualify gallery   - Create HTML result gallery"
+            echo "  visualify all       - Run all URL-based steps"
+            echo ""
+            echo "Directory-based workflow (for Behat/existing screenshots):"
+            echo "  visualify compare-dirs   - Compare two directories of screenshots"
+            echo "  visualify thumbnail-dirs - Generate thumbnails from directories"
+            echo "  visualify gallery-dirs   - Create HTML gallery from directories"
+            echo ""
+            echo "Testing:"
+            echo "  npm test            - Run unit tests"
+            echo "  npm run test:watch  - Run tests in watch mode"
             echo ""
             echo "Using system Chrome/Chromium browser"
             echo "Make sure Chrome or Chromium is installed on your system"

@@ -51,7 +51,7 @@
           
           postInstall = ''
             # Create wrapper script
-            makeWrapper ${pkgs.nodejs_20}/bin/node $out/bin/visualify \
+            makeWrapper ${pkgs.nodejs_22}/bin/node $out/bin/visualify \
               --add-flags "$out/lib/node_modules/visualify/index.js" \
               --set PUPPETEER_SKIP_CHROMIUM_DOWNLOAD 1 \
               --run 'export VISUALIFY_ORIGINAL_CWD="$PWD"'
@@ -63,7 +63,7 @@
           export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1
           export VISUALIFY_ORIGINAL_CWD="$PWD"
           cd ${toString ./.}
-          exec ${pkgs.nodejs_20}/bin/node index.js "$@"
+          exec ${pkgs.nodejs_22}/bin/node index.js "$@"
         '';
 
       in {
@@ -81,7 +81,7 @@
         # Development shell with visualify command available
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            nodejs_20
+            nodejs_22
             visualify-package
           ];
           

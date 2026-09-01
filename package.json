@@ -9,7 +9,7 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "vitest": "^2.0.0"
+    "vitest": "^3.2.4"
   },
   "bin": {
     "visualify": "./index.js"

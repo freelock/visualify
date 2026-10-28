@@ -5,6 +5,7 @@ import { program } from 'commander';
 import fs from 'fs';
 import chalk from 'chalk';
 import loadConfig from './lib/loadConfig.js';
+import { screenshotOptions, imageLimits, ImageSafetyError } from './lib/imageSafety.js';
 import isDocker from 'is-docker';
 import puppeteer from 'puppeteer';
 import path from 'path';
@@ -43,6 +44,7 @@ const allowRoot = opts.allowRoot;
 
 try {
   const config = loadConfig.load(defaultsFile, configFile, domains);
+  imageLimits(config);
 
   let shotsDir = outputDirectory ? outputDirectory : config.directory;
   
@@ -306,44 +308,47 @@ function viewport(width) {
 async function snapPath(path, config, browser) {
   for (const domain in config.domains) {
     const page = await browser.newPage();
-    if (config.auth) {
-      await page.authenticate({'username': config.auth.username, 'password': config.auth.password});
-    }
-    if (config.blockads) {
-      await page.setRequestInterception(true);
-      console.log('Blocking ads from ad hosts');
-      // Block ad technique lifted from https://stackoverflow.com/questions/53807574/how-to-block-ads-with-puppeteer-headless-chrome
-      page.on('request', request => {
-        if (config.blockads) {
-          let domain = null;
-          const frags = request.url().split('/');
-          if (frags.length > 2) {
-            domain = frags[2];
+    try {
+      if (config.auth) {
+        await page.authenticate({'username': config.auth.username, 'password': config.auth.password});
+      }
+      if (config.blockads) {
+        await page.setRequestInterception(true);
+        console.log('Blocking ads from ad hosts');
+        // Block ad technique lifted from https://stackoverflow.com/questions/53807574/how-to-block-ads-with-puppeteer-headless-chrome
+        page.on('request', request => {
+          if (config.blockads) {
+            let domain = null;
+            const frags = request.url().split('/');
+            if (frags.length > 2) {
+              domain = frags[2];
+            }
+            if (hosts[domain] === true) {
+              request.abort();
+              return;
+            }
           }
-          if (hosts[domain] === true) {
-            request.abort();
-            return;
-          }
-        }
-        request.continue();
+          request.continue();
+        });
+      }
+      const url = config.domains[domain] + config.paths[path];
+      // Cycle through each resolution
+      const filenames = config.screen_widths.map(function(width) {
+        return {
+          width: viewport(width),
+          filepath: `${config.directory}/${path}/${width}_chrome_${domain}.png`,
+        };
       });
+      await page.goto(url, requestOpts);
+      for (let item in filenames) {
+        await page.setViewport(filenames[item].width);
+        const options = await screenshotOptions(page, config, `${url} -> ${filenames[item].filepath}`);
+        await page.screenshot({path: filenames[item].filepath, ...options});
+        console.log(chalk.green(`Snapped ${filenames[item].filepath}`));
+      }
+    } finally {
+      await page.close();
     }
-    const url = config.domains[domain] + config.paths[path];
-    // Cycle through each resolution
-    const filenames = config.screen_widths.map(function(width) {
-      return {
-        width: viewport(width),
-        filepath: `${config.directory}/${path}/${width}_chrome_${domain}.png`,
-      };
-    });
-    await page.goto(url, requestOpts);
-    for (let item in filenames) {
-      await page.setViewport(filenames[item].width);
-      const height = page.viewport().height;
-      await page.screenshot({path: filenames[item].filepath, fullPage: true});
-      console.log(chalk.green(`Snapped ${filenames[item].filepath}`));
-    }
-    await page.close();
   };
 }
 
@@ -365,6 +370,8 @@ async function retry(fn, params, retriesLeft = 5, interval = 1000, exponential =
     const val = await fn(...params);
     return val;
   } catch (error) {
+    // Retrying a known oversized page only wastes time and browser resources.
+    if (error instanceof ImageSafetyError) throw error;
     console.log('Error:', error);
     if (retriesLeft) {
       console.log(`Retrying...${retriesLeft} more times`);

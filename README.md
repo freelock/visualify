@@ -90,6 +90,38 @@ This creates a tree of directories in `shots/`, one for each path in the paths y
 
 Screenshots are taken serially to reduce load on our test server.
 
+### Image size protection
+
+To intentionally crop tall pages, set an optional capture height in your YAML:
+
+```yaml
+max_capture_height: 10000
+```
+
+This captures only the top 10,000 CSS pixels of taller pages, leaves shorter pages
+at their natural height, and logs when cropping occurs. Content below the cap is
+not tested. Without this setting, captures remain full-page.
+
+Capture and comparison refuse images taller than **20,000 pixels** or larger than
+**25 million pixels** by default. Capture checks the rendered page before taking
+each screenshot and does not retry size-limit failures. Comparison checks image
+metadata and the combined dimensions before decoding or padding images. Failures
+include the URL or filename and dimensions. These safety limits apply to the
+resulting capture after any explicitly configured crop (including device scaling).
+Comparison does not crop existing screenshots.
+
+For intentionally large pages, override these positive integer limits in your YAML:
+
+```yaml
+max_image_height: 30000
+max_image_pixels: 40000000
+```
+
+`compare-dirs` uses the same defaults and accepts `--max-image-height` and
+`--max-image-pixels`. Raising limits increases memory use and comparison time.
+Pages can change after capture's preflight check; comparison provides a second
+guard for oversized files already on disk.
+
 ### visualify compare
 
 Compare two sets of screenshots using Pixelmatch.

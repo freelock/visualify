@@ -10,6 +10,7 @@ import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
 import path from 'path';
 import loadConfig from './lib/loadConfig.js';
+import { assertImageSize, imageLimits } from './lib/imageSafety.js';
 
 program
   .option('-c, --config-file <config-file>', 'Configuration file')
@@ -29,6 +30,7 @@ const debug = opts.debug || process.env.VISUALIFY_DEBUG === 'true';
 
 try {
   const config = loadConfig.load(defaultsFile, configFile, domains);
+  imageLimits(config);
   
   let shotsDir = outputDirectory ? outputDirectory : config.directory;
   
@@ -43,7 +45,11 @@ try {
   config.directory = shotsDir;
 
   compareShots(config)
-    .then(() => console.log(chalk.blue('Comparisons done!')));
+    .then(() => console.log(chalk.blue('Comparisons done!')))
+    .catch((error) => {
+      console.error(error.message);
+      process.exitCode = 1;
+    });
 } catch(e) {
   if (debug) {
     console.error(e);
@@ -91,6 +97,8 @@ async function imageDiff(items, config) {
 
   let meta1 = await image1.metadata();
   let meta2 = await image2.metadata();
+  assertImageSize(meta1.width, meta1.height, config, items[domainKeys[0]]);
+  assertImageSize(meta2.width, meta2.height, config, items[domainKeys[1]]);
   let width = Math.max(meta1.width, meta2.width);
   if (width > items.width) {
     console.log(`Updating width ${width} to ${items.width}`);
@@ -127,6 +135,7 @@ async function imageDiff(items, config) {
     }
 
   const height = Math.max(meta1.height, meta2.height);
+  assertImageSize(width, height, config, `Comparison ${items.diff}`);
   if (meta1.height != meta2.height){
     // Adjust the smaller to match
     if (meta1.height > meta2.height) {

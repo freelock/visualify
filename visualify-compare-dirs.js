@@ -8,16 +8,23 @@ import chalk from 'chalk';
 import sharp from 'sharp';
 import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
+import { assertImageSize, imageLimits } from './lib/imageSafety.js';
 
 program
   .option('-t, --threshold <threshold>', 'Percentage threshold for failures (e.g., 6)', parseFloat, 6)
   .option('-o, --output-directory <output-dir>', 'Output directory for results')
+  .option('--max-image-height <pixels>', 'Maximum image height (default: 20000)', Number)
+  .option('--max-image-pixels <pixels>', 'Maximum image pixel count (default: 25000000)', Number)
   .argument('<golden-dir>', 'Directory with reference/golden screenshots')
   .argument('<current-dir>', 'Directory with current test screenshots')
   .parse(process.argv);
 
 const opts = program.opts();
 const [goldenDir, currentDir] = program.args;
+const limits = imageLimits({
+  max_image_height: opts.maxImageHeight,
+  max_image_pixels: opts.maxImagePixels,
+});
 
 if (!opts.outputDirectory) {
   program.error('Output directory (-o) is required');
@@ -64,7 +71,7 @@ async function compareDirs() {
     const result = await compareImages(goldenPath, currentPath, diffPath, dataPath);
     results.push({ filename, ...result });
     
-    if (result.percentage > opts.threshold) {
+    if (result.error || result.percentage > opts.threshold) {
       failedComparisons++;
       console.log(chalk.red(`FAIL: ${filename} - ${result.percentage}% (threshold: ${opts.threshold}%)`));
     } else {
@@ -102,10 +109,13 @@ async function compareImages(goldenPath, currentPath, diffPath, dataPath) {
     // Get metadata for both images
     let meta1 = await image1.metadata();
     let meta2 = await image2.metadata();
+    assertImageSize(meta1.width, meta1.height, limits, goldenPath);
+    assertImageSize(meta2.width, meta2.height, limits, currentPath);
     
     // Normalize dimensions (reuse logic from visualify-compare.js)
     let width = Math.max(meta1.width, meta2.width);
     const height = Math.max(meta1.height, meta2.height);
+    assertImageSize(width, height, limits, `Comparison ${diffPath}`);
     
     // Width normalization
     if (meta1.width < width) {

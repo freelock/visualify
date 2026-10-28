@@ -19,6 +19,13 @@ screen_widths:
 # (required) The directory that your screenshots will be stored in
 directory: shots
 
+# Refuse oversized captures/comparisons instead of exhausting worker memory.
+max_image_height: 20000
+max_image_pixels: 25000000
+
+# Optional: capture only the top N CSS pixels of tall pages rather than failing.
+# max_capture_height: 10000
+
 # resize to each screen width, or reload at each screen width. (The former is more efficient).
 resize_or_reload: 'resize'
 

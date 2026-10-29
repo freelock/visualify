@@ -92,15 +92,17 @@ Screenshots are taken serially to reduce load on our test server.
 
 ### Image size protection
 
-To intentionally crop tall pages, set an optional capture height in your YAML:
+Captures default to the top **10,000 CSS pixels** of tall pages, so a long page
+does not abort the remaining screenshot run. Shorter pages keep their natural
+height. Each crop is logged, and content below the cap is not tested.
+
+Override the default capture height in your YAML when needed:
 
 ```yaml
 max_capture_height: 10000
 ```
 
-This captures only the top 10,000 CSS pixels of taller pages, leaves shorter pages
-at their natural height, and logs when cropping occurs. Content below the cap is
-not tested. Without this setting, captures remain full-page.
+The default also applies when using a custom defaults file that omits this setting.
 
 Capture and comparison refuse images taller than **20,000 pixels** or larger than
 **25 million pixels** by default. Capture checks the rendered page before taking

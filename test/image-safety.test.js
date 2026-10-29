@@ -32,29 +32,37 @@ describe('image size protection', () => {
 
   it('checks page dimensions including device scaling before capture', async () => {
     const page = { evaluate: vi.fn().mockResolvedValue({ width: 1280, height: 104153, scale: 1 }) };
-    await expect(screenshotOptions(page, {}, 'https://example.test/tall')).rejects.toThrow(/example.test/);
+    await expect(screenshotOptions(page, { max_capture_height: 110000 }, 'https://example.test/tall')).rejects.toThrow(/example.test/);
     page.evaluate.mockResolvedValue({ width: 1280, height: 10000, scale: 2 });
     await expect(screenshotOptions(page, {}, 'retina')).rejects.toThrow(/51200000 pixels/);
     page.evaluate.mockResolvedValue({ width: 1280, height: 800, scale: 1 });
-    await expect(screenshotOptions(page, {}, 'normal')).resolves.toEqual({ fullPage: true });
+    await expect(screenshotOptions(page, {}, 'normal')).resolves.toEqual({
+      clip: { x: 0, y: 0, width: 1280, height: 800 }, captureBeyondViewport: true,
+    });
   });
 
-  it('clips oversized pages only when a capture height is explicitly set', async () => {
+  it('clips oversized pages by default and leaves shorter pages unchanged', async () => {
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
       const page = { evaluate: vi.fn().mockResolvedValue({ width: 1280, height: 104153, scale: 1 }) };
-      await expect(screenshotOptions(page, { max_capture_height: 10000 }, 'tall')).resolves.toEqual({
+      await expect(screenshotOptions(page, {}, 'tall')).resolves.toEqual({
         clip: { x: 0, y: 0, width: 1280, height: 10000 }, captureBeyondViewport: true,
       });
       expect(warning).toHaveBeenCalledWith(expect.stringContaining('cropping page height from 104153 to 10000'));
       warning.mockClear();
       page.evaluate.mockResolvedValue({ width: 1280, height: 800, scale: 1 });
-      const options = await screenshotOptions(page, { max_capture_height: 10000 }, 'short');
+      const options = await screenshotOptions(page, {}, 'short');
       expect(options.clip.height).toBe(800);
       expect(warning).not.toHaveBeenCalled();
     } finally {
       warning.mockRestore();
     }
+  });
+
+  it('allows an explicit capture height to override the default', async () => {
+    const page = { evaluate: vi.fn().mockResolvedValue({ width: 320, height: 15000, scale: 1 }) };
+    const options = await screenshotOptions(page, { max_capture_height: 18000 }, 'staff');
+    expect(options.clip.height).toBe(15000);
   });
 
   it('validates capture caps and still enforces safety limits after cropping', async () => {
